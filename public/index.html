@@ -784,6 +784,18 @@ function bindListino(){
   m.querySelectorAll('[data-dell]').forEach(function(b){b.addEventListener('click',function(){S.listino.splice(+b.dataset.dell,1);persistListino();m.innerHTML=viewListino();bindListino()})});
   m.querySelectorAll('[data-addl]').forEach(function(b){b.addEventListener('click',function(){S.listino.push({cat:b.dataset.addl,nome:'',desc:'',prezzo:0});persistListino();m.innerHTML=viewListino();bindListino();var ins=m.querySelectorAll('[data-li$=".nome"]');if(ins.length){var f=null;S.listino.forEach(function(x,i){if(x===S.listino[S.listino.length-1])f=m.querySelector('[data-li="'+i+'.nome"]')});if(f)f.focus()}})});
 }
+/* ---------- impronta digitale (questo telefono) ---------- */
+function bioId(){try{return localStorage.getItem('bioId')}catch(e){return null}}
+function b64(u){var a=new Uint8Array(u),s='';for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]);return btoa(s)}
+function unb64(t){var s=atob(t),a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a}
+function rnd(n){return crypto.getRandomValues(new Uint8Array(n))}
+async function bioEnable(){
+  if(!window.PublicKeyCredential||!navigator.credentials){toast('Questo browser non supporta l\u2019impronta');return}
+  try{var c=await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:'Foto Pier'},user:{id:rnd(16),name:'fotopier',displayName:'Foto Pier'},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'discouraged'},timeout:60000}});
+    localStorage.setItem('bioId',b64(c.rawId));toast('Impronta attivata su questo dispositivo');route2()}
+  catch(e){toast('Impronta non attivata')}}
+async function bioLogin(){var id=bioId();if(!id)return false;
+  try{await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(id)}],userVerification:'required',timeout:60000}});return true}catch(e){return false}}
 /* ---------- password di accesso ---------- */
 function appOk(){try{return sessionStorage.getItem('appOk')==='1'}catch(e){return false}}
 function lockRender(){var L=document.getElementById('appLock');if(!L)return;
@@ -792,13 +804,15 @@ function lockRender(){var L=document.getElementById('appLock');if(!L)return;
   L.innerHTML='<div style="max-width:340px;width:100%;padding:24px"><div style="font-weight:800;letter-spacing:.08em;font-size:20px;margin-bottom:4px">FOTO PIER</div><div style="color:var(--muted);margin-bottom:16px">'+(!S.setLoaded?'Caricamento…':nuova?'Scegli la password di accesso':'Inserisci la password')+'</div>'
    +'<input type="password" id="lkP1" placeholder="'+(nuova?'Nuova password':'Password')+'" autocomplete="off" style="width:100%;box-sizing:border-box">'
    +(nuova?'<input type="password" id="lkP2" placeholder="Ripeti password" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:8px">':'')
-   +'<button class="btn pri" id="lkGo" style="margin-top:12px;width:100%">'+(nuova?'Salva e entra':'Entra')+'</button></div>';
+   +'<button class="btn pri" id="lkGo" style="margin-top:12px;width:100%">'+(nuova?'Salva e entra':'Entra')+'</button>'
+   +(!nuova&&S.setLoaded&&bioId()?'<button class="btn" id="lkBio" style="margin-top:8px;width:100%">\ud83d\udc46 Entra con impronta</button>':'')+'</div>';
   var go=document.getElementById('lkGo'),p1=document.getElementById('lkP1'),p2=document.getElementById('lkP2');
   function ok(){try{sessionStorage.setItem('appOk','1')}catch(e){}lockRender()}
   function run(){var p=p1.value;if(!S.setLoaded){toast('Un attimo, sto caricando');return}if(!p){toast('Scrivi la password');return}
     if(!S.set.appHash){if(p.length<4){toast('Almeno 4 caratteri');return}if(p!==p2.value){toast('Le due password non coincidono');return}
       sha(p).then(function(h){S.set.appHash=h;persistSet();ok()})}
     else sha(p).then(function(h){if(h===S.set.appHash)ok();else{toast('Password sbagliata');p1.value=''}})}
+  var bb=document.getElementById('lkBio');if(bb){var tryBio=function(){bioLogin().then(function(o){if(o)ok()})};bb.addEventListener('click',tryBio);if(!S._bioAuto){S._bioAuto=1;tryBio()}}
   go.addEventListener('click',run);[p1,p2].forEach(function(e){if(e)e.addEventListener('keydown',function(k){if(k.key==='Enter')run()})});if(document.activeElement!==p1)p1.focus()}
 function lockInit(){if(appOk())return;var L=document.createElement('div');L.id='appLock';L.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center';document.body.appendChild(L);lockRender()}
 function appChange(){var p=prompt('Nuova password di accesso al gestionale (almeno 4 caratteri):');if(!p)return;if(p.length<4){toast('Almeno 4 caratteri');return}sha(p).then(function(h){S.set.appHash=h;persistSet();toast('Password di accesso cambiata')})}
@@ -1129,7 +1143,7 @@ function viewSet(){
    +'<div class="card sect"><h2>Titolare e recapiti</h2><div class="f">'
    +setf('titolare','Titolare','s6')+setf('piva','Partita IVA','s6')+setf('indirizzo','Indirizzo','s12')+setf('tel','Telefoni','s6')+setf('web','Sito e mail','s6')+setf('calendarId','Calendario Google per i matrimoni','s12')+'</div></div>'
    +'<div class="card sect"><h2>Importa matrimoni 2026</h2><p class="hint" style="margin:0 0 10px">Aggiunge i 50 matrimoni 2026 dei tuoi fogli (servizi, importi, acconti, stato lavori). Non tocca calendario né i matrimoni già presenti. Si può premere una volta sola senza doppioni.</p><button class="btn pri" id="imp26">Importa matrimoni 2026</button></div>'
-   +'<div class="card sect"><h2>Password di accesso</h2><p class="hint" style="margin:0 0 10px">Viene chiesta ogni volta che apri il gestionale nel browser.</p><button class="btn" id="chgApp">Cambia password di accesso</button></div>'
+   +'<div class="card sect"><h2>Password di accesso</h2><p class="hint" style="margin:0 0 10px">Viene chiesta ogni volta che apri il gestionale nel browser.</p><button class="btn" id="chgApp">Cambia password di accesso</button> <button class="btn" id="bioBtn">'+(bioId()?'Impronta attiva su questo dispositivo \u2713':'Attiva impronta su questo dispositivo')+'</button></div>'
    +'<div class="card sect"><h2>Pagamenti</h2><div class="f">'+setf('iban','IBAN','s8')+setf('intestatario','Intestatario','s4')+setf('mailBonifico','Mail per la copia del bonifico','s6')+'</div></div>'
    +'<div class="card sect"><h2>Team</h2><div class="team" id="teamList">'+s.team.map(function(t,i){return '<span class="chip on">'+esc(t)+' <button data-rm="'+i+'" style="background:none;border:0;cursor:pointer;color:inherit" aria-label="Rimuovi '+esc(t)+'">×</button></span>'}).join('')+'</div>'
    +'<div class="row" style="margin-top:12px"><input id="newMember" placeholder="Nuovo fotografo o videomaker" style="max-width:260px"><button class="btn" id="addMember">Aggiungi</button></div></div>'
@@ -1137,7 +1151,7 @@ function viewSet(){
 }
 function setf(k,l,c){return '<label class="'+c+'">'+esc(l)+'<input data-set="'+k+'" value="'+esc(S.set[k])+'"></label>'}
 function bindSet(){
-  var ca=$('#chgApp');if(ca)ca.addEventListener('click',appChange);
+  var bbn=$('#bioBtn');if(bbn)bbn.addEventListener('click',function(){if(bioId()){if(confirm('Disattivare l\u2019impronta su questo dispositivo?')){try{localStorage.removeItem('bioId')}catch(e){}route2()}}else bioEnable()});var ca=$('#chgApp');if(ca)ca.addEventListener('click',appChange);
   var ib=$('#imp26');if(ib)ib.addEventListener('click',async function(){
     if(!confirm('Importare i matrimoni 2026 nel gestionale?'))return;
     try{var r=await fetch('import2026.json',{cache:'no-store'});var L=await r.json();var n=0;
