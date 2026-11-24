@@ -217,6 +217,8 @@ html,body{overflow-x:hidden;max-width:100vw}.grid,.two,.kpis,.formrow{min-width:
 .att span{min-width:0;overflow-wrap:anywhere}.att{min-width:0}
 .tabs,.row{flex-wrap:wrap}.pill{white-space:normal}
 }
+.fest{display:inline-block;width:6px;height:6px;border-radius:50%;background:#d93025;margin-left:3px;vertical-align:middle}
+.cal-grid .cd.day.t>b .fest{background:#fff}
 </style>
 </head>
 <body>
@@ -392,6 +394,9 @@ function yrSel(){var ys=yrList();if(!ys.length)return String(new Date().getFullY
 function inYr(w){var y=yrSel();return y==='tutti'||String(yearOf(w))===y}
 function yrBar(){var y=yrSel();return '<div class="tabs" id="yrBar" style="margin-bottom:14px">'+yrList().concat(['tutti']).map(function(a){return '<button class="chip'+(y===a?' on':'')+'" data-yr="'+a+'">'+(a==='tutti'?'Tutti gli anni':a)+'</button>'}).join('')+'</div>'}
 function bindYr(){document.querySelectorAll('#yrBar .chip').forEach(function(b){b.addEventListener('click',function(){S.yr=b.dataset.yr;route2()})})}
+function pasqua(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
+function festa(y,m,d){var F={'0-1':'Capodanno','0-6':'Epifania','3-25':'Festa della Liberazione','4-1':'Festa del Lavoro','5-2':'Festa della Repubblica','7-15':'Ferragosto','10-1':'Ognissanti','11-8':'Immacolata','11-25':'Natale','11-26':'Santo Stefano'};
+  var k=m+'-'+d;if(F[k])return F[k];var e=pasqua(y);if(e.getMonth()===m&&e.getDate()===d)return 'Pasqua';var l=new Date(e.getFullYear(),e.getMonth(),e.getDate()+1);if(l.getMonth()===m&&l.getDate()===d)return 'Pasquetta';return ''}
 /* ---------- navigazione ---------- */
 setTimeout(lockInit,0);
 function nav(){
@@ -445,7 +450,7 @@ function calendario(){
     (apBy[d]||[]).forEach(function(x){var tp=x.a.tipo;
       ag+='<a class="ev ap'+(tp==='Ritiro album'?' alb':isPost(tp)?' post':tp==='Contratto'?' con':'')+'" data-day="'+ds+'" href="#"><b>'+esc(tp)+(x.a.ora?' · '+esc(x.a.ora):'')+'</b> '+esc(nomiSposi(x.w))+'</a>';
       items+='<a class="ev ap'+(tp==='Ritiro album'?' alb':isPost(tp)?' post':tp==='Contratto'?' con':'')+'" data-day="'+ds+'" href="#" title="'+esc(tp+' · '+nomiSposi(x.w))+'">'+esc(tp.split(' ')[0])+(x.a.ora?' '+esc(x.a.ora):'')+' '+esc((x.w.sposo.nome||x.w.sposa.nome||'').split(' ')[0])+'</a>'});
-    cells+='<div class="cd day'+(isT?' t':'')+'" data-cell="'+ds+'"><b>'+d+'</b>'+items+'</div>';
+    var fe=festa(y,m,d-0);cells+='<div class="cd day'+(isT?' t':'')+'" data-cell="'+ds+'"><b'+(fe?' title="'+esc(fe)+'"':'')+'>'+d+(fe?'<i class="fest"></i>':'')+'</b>'+items+'</div>';
     if(ag)agenda+='<div class="agd'+(isT?' t':'')+'"><div class="agn"><b>'+d+'</b><span>'+GGS[(new Date(y,m,d).getDay()+6)%7]+'</span></div><div class="agl">'+ag+'</div></div>';
   }
   for(var k=start+dim;k<42;k++)cells+='<div class="cd"></div>';
