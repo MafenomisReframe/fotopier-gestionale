@@ -88,7 +88,7 @@ tr.click:hover td{background:var(--pale)}
 .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:8px}
 .legend span:before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;background:var(--accent)}
 .legend span.in:before{background:var(--ink)}
-.legend span.ap:before{background:#e0b100}.legend span.po:before{background:#722f37}.legend span.co:before{background:#e8730c}.legend span.mc:before{background:#d93025}.legend span.mv:before{background:#2e9d5b}
+.legend span.ap:before{background:#e0b100}.legend span.po:before{background:#722f37}.legend span.co:before{background:#3b9ede}.legend span.mc:before{background:#d93025}.legend span.mv:before{background:#2e9d5b}
 /* form */
 .f{display:grid;gap:10px;grid-template-columns:repeat(12,minmax(0,1fr));margin-bottom:10px}
 .f label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;grid-column:span 4}
@@ -200,6 +200,7 @@ function two(n){return (n<10?'0':'')+n}
 function parseD(s){if(!s)return null;var p=String(s).split('-');return new Date(+p[0],+p[1]-1,+p[2])}
 var MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 var MESI3=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+async function calDelIds(ids){ids=(ids||[]).filter(Boolean);if(!ids.length)return;try{var mcp=await claude.use('mcp');for(var i=0;i<ids.length;i++)await mcp.callTool('Google Calendar','delete_event',{calendarId:S.set.calendarId||'weddingfotopier@gmail.com',eventId:ids[i]});toast('Tolto anche da Google Calendar')}catch(e){toast('Su Google Calendar non rimosso')}}
 function dlong(s){var d=parseD(s);return d?d.getDate()+' '+MESI[d.getMonth()]+' '+d.getFullYear():''}
 function dshort(s){var d=parseD(s);return d?two(d.getDate())+'/'+two(d.getMonth()+1)+'/'+d.getFullYear():''}
 function todayStr(){var d=new Date();return d.getFullYear()+'-'+two(d.getMonth()+1)+'-'+two(d.getDate())}
@@ -906,7 +907,7 @@ function bindW(w){
       changed(f==='importo'||f==='tipo')})});
   m.querySelectorAll('[data-delp]').forEach(function(b){b.addEventListener('click',function(){w.pagamenti.splice(+b.dataset.delp,1);changed(true)})});
   m.querySelectorAll('[data-ap]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.ap.split('.');var p=w.appuntamenti[+a[0]];p[a[1]]=el.type==='checkbox'?el.checked:el.value;changed(a[1]==='fatto'||a[1]==='data')})});
-  m.querySelectorAll('[data-delap]').forEach(function(b){b.addEventListener('click',function(){w.appuntamenti.splice(+b.dataset.delap,1);changed(true)})});
+  m.querySelectorAll('[data-delap]').forEach(function(b){b.addEventListener('click',function(){var rm=w.appuntamenti.splice(+b.dataset.delap,1)[0];if(rm&&rm.calEventId)calDelIds([rm.calEventId]);changed(true)})});
   $('#addAp').addEventListener('click',function(){w.appuntamenti=w.appuntamenti||[];w.appuntamenti.push({tipo:TIPI_APP[0],data:'',ora:'',note:'',fatto:false});changed(true)});
   $('#attBtn').addEventListener('click',async function(){
     if(w.attesa&&!this.dataset.armed){var bt=this;bt.dataset.armed='1';bt.textContent='Sicuro? Clicca di nuovo per confermare';setTimeout(function(){if(document.body.contains(bt)){delete bt.dataset.armed;bt.textContent='Conferma matrimonio'}},4000);return}
@@ -934,6 +935,7 @@ function bindW(w){
   $('#pdf').addEventListener('click',function(){makePdf(w)});
   $('#delW').addEventListener('click',function(){
     var b=$('#delW');if(!b.dataset.sure){b.dataset.sure='1';b.textContent='Conferma eliminazione';setTimeout(function(){if(b){b.textContent='Elimina';delete b.dataset.sure}},4000);return}
+    calDelIds([w.calEventId].concat((w.appuntamenti||[]).map(function(x){return x.calEventId})));
     S.weddings=S.weddings.filter(function(x){return x.id!==w.id});
     if(S.db)S.db.doc('matrimoni/'+w.id).delete().catch(function(){toast('Eliminazione non riuscita')});
     location.hash='matrimoni';toast('Matrimonio eliminato');
