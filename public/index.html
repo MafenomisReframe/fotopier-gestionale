@@ -378,7 +378,8 @@ function viewDash(){
   var ap=[];all.forEach(function(w){(w.appuntamenti||[]).forEach(function(a){if(!a.fatto&&a.data&&a.data>=tod)ap.push({w:w,a:a})})});
   ap.sort(function(x,y){return (x.a.data+(x.a.ora||'')).localeCompare(y.a.data+(y.a.ora||''))});
   out+='<div class="card"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">Prossimi appuntamenti</h2><details class="nl" id="apNl"><summary class="btn pri">+ Aggiungi appuntamento</summary><div class="card nlp"><b>Nuovo appuntamento</b><div class="f" style="margin-top:10px">'
-   +'<label class="s12">Matrimonio<select id="apW"><option value="">Scegli il matrimonio</option>'+all.slice().sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')}).map(function(w){return '<option value="'+esc(w.id)+'">'+esc(nomiSposi(w))+(w.data?' · '+esc(dshort(w.data)):'')+'</option>'}).join('')+'</select></label>'
+   +'<label class="s12">Matrimonio<select id="apW"><option value="">Scegli il matrimonio</option><option value="__new">+ Nuovo contatto (non ancora cliente)</option>'+all.slice().sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')}).map(function(w){return '<option value="'+esc(w.id)+'">'+esc(nomiSposi(w))+(w.data?' · '+esc(dshort(w.data)):'')+'</option>'}).join('')+'</select></label>'
+   +'<div id="apNew" class="f s12" style="display:none;padding:0"><label class="s6">Sposo<input id="nSpo" placeholder="Nome e cognome"></label><label class="s6">Sposa<input id="nSpa" placeholder="Nome e cognome"></label><label class="s6">Telefono<input id="nTel" type="tel"></label><label class="s6">Email<input id="nMail" type="email"></label><label class="s12">Data del matrimonio, se la sanno<input id="nData" type="date"></label></div>'
    +'<label class="s12">Tipo<select id="apT">'+TIPI_APP.map(function(t){return '<option>'+esc(t)+'</option>'}).join('')+'</select></label>'
    +'<label class="s6">Data<input type="date" id="apD" value="'+todayStr()+'"></label><label class="s6">Ora<input type="time" id="apO"></label>'
    +'<label class="s12">Note<input id="apN" placeholder="Facoltativo"></label></div>'
@@ -394,12 +395,20 @@ function bindDash(){
     document.addEventListener('keydown',function esc3(e){if(!document.body.contains(apn)){document.removeEventListener('keydown',esc3);return}if(e.key==='Escape')apn.open=false});
     var apWarn=function(){var c=apConfl($('#apD').value,$('#apO').value);var m=$('#apM');m.style.color=c.length?'#b45309':'';m.style.fontWeight=c.length?'700':'';m.textContent=c.length?'Attenzione, già in programma: '+c.join(' · '):'';return c};
     $('#apD').addEventListener('change',apWarn);$('#apO').addEventListener('input',apWarn);$('#apO').addEventListener('change',apWarn);
+    $('#apW').addEventListener('change',function(){$('#apNew').style.display=this.value==='__new'?'':'none'});
     var apOk=false;
     ['#apD','#apO'].forEach(function(q){$(q).addEventListener('change',function(){apOk=false;$('#apS').textContent='Salva appuntamento'})});
     $('#apS').addEventListener('click',async function(){
       var cf=apConfl($('#apD').value,$('#apO').value);
       if(cf.length&&!apOk){apWarn();apOk=true;this.textContent='Salva comunque';return}
-      var msg=$('#apM'),w=byId($('#apW').value),tipo=$('#apT').value,d=$('#apD').value,o=$('#apO').value,note=$('#apN').value.trim();
+      var msg=$('#apM'),isNew=$('#apW').value==='__new',w=isNew?null:byId($('#apW').value),tipo=$('#apT').value,d=$('#apD').value,o=$('#apO').value,note=$('#apN').value.trim();
+      if(isNew){
+        var n1=$('#nSpo').value.trim(),n2=$('#nSpa').value.trim();
+        if(!n1&&!n2){msg.textContent='Scrivi almeno il nome di uno dei due';return}
+        w=emptyWedding(new Date().getFullYear(),0);w.id=w.anno+'-'+Date.now().toString(36);
+        w.sposo.nome=n1;w.sposa.nome=n2;w.sposo.tel=$('#nTel').value.trim();w.email=$('#nMail').value.trim();w.data=$('#nData').value||'';
+        S.weddings.push(w);
+      }
       if(!w){msg.textContent='Scegli il matrimonio';return}
       if(!d){msg.textContent='Inserisci la data';return}
       var ap={tipo:tipo,data:d,ora:o,note:note,fatto:false},calMsg='';
