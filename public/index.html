@@ -603,11 +603,11 @@ function svcRows(w,onlyOpen){
 }
 function lavCard(w){
   var st=statoW(w);
-  return '<a class="lw" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'</a>';
+  return '<a class="lw" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
 }
 function viewLav(){
-  var all=conf().filter(function(w){return ((w.data&&daysTo(w.data)<0)||w.lavorazione)&&lavori(w).length});
-  var cand=conf().filter(function(w){return lavori(w).length&&!w.lavorazione&&!(w.data&&daysTo(w.data)<0)}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
+  var all=conf().filter(function(w){return !w.lavEsc&&((w.data&&daysTo(w.data)<0)||w.lavorazione)&&lavori(w).length});
+  var cand=conf().filter(function(w){return lavori(w).length&&(w.lavEsc||(!w.lavorazione&&!(w.data&&daysTo(w.data)<0)))}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
   var inl=all.filter(function(w){var k=statoW(w).k;return k==='lavoro'});
   var fin=all.filter(function(w){return statoW(w).k==='finito'});
   var con=all.filter(function(w){return statoW(w).k==='consegnato'});
@@ -817,7 +817,8 @@ function bindAdm(){
   if(nl){nl.addEventListener('click',function(e){if(e.target===nl)nl.open=false});
     document.addEventListener('keydown',function esc2(e){if(!document.body.contains(nl)){document.removeEventListener('keydown',esc2);return}if(e.key==='Escape')nl.open=false});
     var q=nl.querySelector('.nls');if(q)q.addEventListener('input',function(){var t=q.value.toLowerCase();nl.querySelectorAll('.nlr').forEach(function(b){b.style.display=b.textContent.toLowerCase().indexOf(t)>=0?'':'none'})})}
-  document.querySelectorAll('[data-startlav]').forEach(function(b){b.addEventListener('click',function(){var w=byId(b.dataset.startlav);if(!w)return;w.lavorazione=true;persist(w);location.hash='lavoro-'+w.id})});
+  document.querySelectorAll('[data-lavx]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var w=byId(b.dataset.lavx);if(!w)return;if(!confirm('Togliere '+nomiSposi(w)+' dalla Lavorazione?\nIl matrimonio resta nell\u2019elenco Matrimoni; potrai riaggiungerlo da + Nuova lavorazione.'))return;w.lavEsc=true;delete w.lavorazione;persist(w);toast('Tolto dalla lavorazione');route2()})});
+  document.querySelectorAll('[data-startlav]').forEach(function(b){b.addEventListener('click',function(){var w=byId(b.dataset.startlav);if(!w)return;w.lavorazione=true;delete w.lavEsc;persist(w);location.hash='lavoro-'+w.id})});
   document.querySelectorAll('#admY .chip[data-y]').forEach(function(b){b.addEventListener('click',function(){S.admY=b.dataset.y;route2()})});var pw=$('#admPw');if(pw)pw.addEventListener('click',admChange);
   document.querySelectorAll('tr.click').forEach(function(r){r.addEventListener('click',function(){location.hash='matrimonio-'+r.dataset.id})});
 }
