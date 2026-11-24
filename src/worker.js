@@ -75,6 +75,46 @@ async function calendar(env, tool, input) {
   return json({ payload: { id: ev.id, htmlLink: ev.htmlLink } });
 }
 
+/* ---- Google Drive (OAuth con refresh token dell'account weddingfotopier) ---- */
+async function driveToken(env) {
+  if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET || !env.GOOGLE_OAUTH_REFRESH_TOKEN) throw new Error('Google Drive non configurato');
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: env.GOOGLE_OAUTH_CLIENT_ID, client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET, refresh_token: env.GOOGLE_OAUTH_REFRESH_TOKEN, grant_type: 'refresh_token' }) });
+  const t = await r.json();
+  if (!t.access_token) throw new Error('Drive: ' + (t.error_description || t.error || 'token non ottenuto'));
+  return t.access_token;
+}
+async function driveUpload(env, b) {
+  const anno = String(b.anno || '').replace(/\D/g, '');
+  if (!/^20\d\d$/.test(anno)) return json({ error: 'Anno non valido' }, 400);
+  const nome = String(b.nome || 'Contratto.pdf').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 150);
+  if (!b.pdf || b.pdf.length > 12e6) return json({ error: 'PDF mancante o troppo grande' }, 400);
+  const tok = await driveToken(env);
+  const H = { Authorization: 'Bearer ' + tok };
+  const fname = 'CONTRATTI ' + anno;
+  const q = "name='" + fname + "' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false";
+  let r = await fetch('https://www.googleapis.com/drive/v3/files?fields=files(id)&q=' + encodeURIComponent(q), { headers: H });
+  let j = await r.json();
+  if (!r.ok) return json({ error: (j.error && j.error.message) || 'Errore Drive', code: r.status }, 502);
+  let folder = j.files && j.files[0] && j.files[0].id;
+  if (!folder) {
+    r = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: fname, mimeType: 'application/vnd.google-apps.folder', parents: ['root'] }) });
+    j = await r.json();
+    if (!r.ok) return json({ error: (j.error && j.error.message) || 'Errore Drive', code: r.status }, 502);
+    folder = j.id;
+  }
+  const bin = Uint8Array.from(atob(b.pdf), c => c.charCodeAt(0));
+  const bd = 'fpb' + Date.now();
+  const enc = new TextEncoder();
+  const head = enc.encode('--' + bd + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify({ name: nome, parents: [folder] }) + '\r\n--' + bd + '\r\nContent-Type: application/pdf\r\n\r\n');
+  const tail = enc.encode('\r\n--' + bd + '--');
+  const body = new Uint8Array(head.length + bin.length + tail.length);
+  body.set(head, 0); body.set(bin, head.length); body.set(tail, head.length + bin.length);
+  r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', { method: 'POST', headers: { ...H, 'Content-Type': 'multipart/related; boundary=' + bd }, body });
+  j = await r.json();
+  if (!r.ok) return json({ error: (j.error && j.error.message) || 'Errore Drive', code: r.status }, 502);
+  return json({ ok: true, id: j.id, link: j.webViewLink, cartella: fname });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -107,6 +147,9 @@ export default {
       if (url.pathname === '/api/calendar' && req.method === 'POST') {
         const b = await req.json();
         return await calendar(env, b.tool, b.input || {});
+      }
+      if (url.pathname === '/api/drive' && req.method === 'POST') {
+        return await driveUpload(env, await req.json());
       }
       return json({ error: 'Non trovato' }, 404);
     } catch (e) {

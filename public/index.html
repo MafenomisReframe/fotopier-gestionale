@@ -1019,6 +1019,12 @@ async function makePdf(w){
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
     await save(nome,bytes);
     w.contrattoGenerato=todayStr();persist(w);
+    try{var bin='';for(var k=0;k<bytes.length;k+=32768)bin+=String.fromCharCode.apply(null,bytes.subarray(k,k+32768));
+      var dr=await fetch('/api/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({anno:(w.data||'').slice(0,4)||w.anno,nome:nome,pdf:btoa(bin)})});
+      var dj=await dr.json();
+      if(dr.ok){toast('Contratto salvato nel Drive in '+dj.cartella)}
+      else if(dr.status!==500||!/non configurato/.test(dj.error||'')){toast('Salvataggio su Drive non riuscito: '+(dj.error||dr.status))}
+    }catch(e){}
     if(w.calEventId&&w.data){try{await calSync(w);persist(w);toast('Contratto generato e evento in calendario aggiornato')}catch(e){}}
   }catch(e){toast('Creazione PDF non riuscita')}
 }
