@@ -439,7 +439,7 @@ function nav(){
   var n=$('#nav');var r=S.route;
   var items=[['dashboard','Dashboard'],['matrimoni','Matrimoni'],['lavorazione','Lavorazione'],['team','Team'],['listino','Listino'],['amministrazione','Amministrazione'],['impostazioni','Impostazioni']];
   n.innerHTML=items.map(function(i){var on=r===i[0]||(i[0]==='matrimoni'&&r.indexOf('matrimonio-')===0)||(i[0]==='lavorazione'&&r.indexOf('lavoro-')===0);
-    return '<a href="#'+i[0]+'" class="'+(on?'on':'')+'">'+i[1]+(i[0]==='matrimoni'?'<span class="count">'+conf().length+'</span>':'')+'</a>'}).join('');
+    return '<a href="#'+i[0]+'" class="'+(on?'on':'')+'">'+i[1]+'</a>'}).join('');
   $('#foot').textContent=S.db?(S.live?'Dati salvati online':'Connessione in corso…'):'Prova senza salvataggio';
 }
 function route(){
@@ -967,7 +967,8 @@ function viewList(){
   var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Matrimoni da saldare, per data · i saldati sono solo in Amministrazione</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop" style="background:#d93025;border-color:#d93025;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.06em">CREA CONTRATTO</a></div>';
   out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, celebrazione, ristorante" value="'+esc(S.q)+'">'
    +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['con','Con contratto'],['senza','Senza contratto'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['consegnato','Consegnati']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
-  out=out.replace('<div class="row" style="margin-bottom:14px"><input class="search"',yrBar()+'<div class="row" style="margin-bottom:14px"><input class="search"');
+  var nTot=conf().filter(inYr).length,yy=yrSel(),totCard='<div class="card" style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:14px 18px"><span style="font-size:44px;font-weight:800;line-height:1">'+nTot+'</span><span style="font-size:16px;font-weight:700">matrimoni '+(yy==='tutti'?'in tutto':yy)+'</span></div>';
+  out=out.replace('<div class="row" style="margin-bottom:14px"><input class="search"',totCard+yrBar()+'<div class="row" style="margin-bottom:14px"><input class="search"');
   var q=S.q.toLowerCase();
   var rows=conf().filter(function(w){
     if(!inYr(w))return false;
