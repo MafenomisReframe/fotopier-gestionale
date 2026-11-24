@@ -266,6 +266,15 @@ function nomiSposi(w){var a=(w.sposo.nome||'').trim(),b=(w.sposa.nome||'').trim(
 var S={listino:[],weddings:[],set:Object.assign({},DEFAULT_SET),db:null,live:false,loaded:false,route:'dashboard',filter:'tutti',q:''};
 var saveTimers={};
 function resText(w){var v=w.resVia!=null?w.resVia:(w.residenza||'');var l2=[w.resCap,w.resCitta].filter(Boolean).join(' ')+(w.resProv?' ('+w.resProv+')':'');return [v,l2.trim()].filter(Boolean).join(' – ')}
+function apConfl(d,o){
+  var out=[];if(!d)return out;var mm=function(t){return +t.slice(0,2)*60+ +t.slice(3,5)};
+  S.weddings.forEach(function(w){
+    if(w.data===d)out.push('Matrimonio quel giorno: '+nomiSposi(w)+(w.ora?' (cerimonia '+w.ora+')':''));
+    (w.appuntamenti||[]).forEach(function(a){
+      if(a.fatto||a.data!==d)return;
+      if(o&&a.ora){if(Math.abs(mm(a.ora)-mm(o))<60)out.push(a.tipo+' alle '+a.ora+' · '+nomiSposi(w))}
+      else if(!o||!a.ora)out.push(a.tipo+(a.ora?' alle '+a.ora:'')+' · '+nomiSposi(w))}) });
+  return out}
 function lab(w){var n=w.numero||0;return (w.anno||'')+'-'+(n<10?'00':n<100?'0':'')+n}
 function yearOf(w){return /^\d{4}/.test(w.data||'')?+w.data.slice(0,4):(w.anno||new Date().getFullYear())}
 function renumber(except){
@@ -383,7 +392,13 @@ function bindDash(){
   var apn=$('#apNl');
   if(apn){apn.addEventListener('click',function(e){if(e.target===apn)apn.open=false});
     document.addEventListener('keydown',function esc3(e){if(!document.body.contains(apn)){document.removeEventListener('keydown',esc3);return}if(e.key==='Escape')apn.open=false});
+    var apWarn=function(){var c=apConfl($('#apD').value,$('#apO').value);var m=$('#apM');m.style.color=c.length?'#b45309':'';m.style.fontWeight=c.length?'700':'';m.textContent=c.length?'Attenzione, già in programma: '+c.join(' · '):'';return c};
+    $('#apD').addEventListener('change',apWarn);$('#apO').addEventListener('input',apWarn);$('#apO').addEventListener('change',apWarn);
+    var apOk=false;
+    ['#apD','#apO'].forEach(function(q){$(q).addEventListener('change',function(){apOk=false;$('#apS').textContent='Salva appuntamento'})});
     $('#apS').addEventListener('click',async function(){
+      var cf=apConfl($('#apD').value,$('#apO').value);
+      if(cf.length&&!apOk){apWarn();apOk=true;this.textContent='Salva comunque';return}
       var msg=$('#apM'),w=byId($('#apW').value),tipo=$('#apT').value,d=$('#apD').value,o=$('#apO').value,note=$('#apN').value.trim();
       if(!w){msg.textContent='Scegli il matrimonio';return}
       if(!d){msg.textContent='Inserisci la data';return}
