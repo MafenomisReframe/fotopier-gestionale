@@ -42,11 +42,11 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink)
 .top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
 .grid{display:grid;gap:14px}
-.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));margin-bottom:14px}
 .kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
 .kpi .v{font-size:27px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
 .kpi .n{font-size:12px;color:var(--muted);margin-top:2px}
-.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
 .btn{border:1px solid var(--line);background:var(--panel);padding:9px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
 .btn:hover{background:var(--pale)}
 .btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -137,7 +137,7 @@ textarea{resize:vertical;min-height:64px}
 .cd.w{background:#d93025;color:#fff;border-color:#d93025}
 .cd.w.att{background:#2e9d5b;color:#fff;border:1px solid #2e9d5b}.cd.w span{font-weight:700;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cd.ap{border-color:#e0b100;background:#fff3b0;color:#5a4500}
-.formrow{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px}@media(max-width:1300px){.formrow{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))!important}}.fcard{display:flex;flex-direction:column}.fcard>.row:last-child{margin-top:auto!important;padding-top:12px}.fcard>.row:last-child .btn{width:100%;min-width:200px;justify-content:center;text-align:center;box-sizing:border-box}.fcard>.row:last-child{flex-wrap:wrap}
+.formrow{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px}@media(max-width:1300px){.formrow{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))!important}}.fcard{display:flex;flex-direction:column}.fcard>.row:last-child{margin-top:auto!important;padding-top:12px}.fcard>.row:last-child .btn{width:100%;min-width:200px;justify-content:center;text-align:center;box-sizing:border-box}.fcard>.row:last-child{flex-wrap:wrap}
 .cd.ap.alb{border-color:#e8730c;background:#ffd9b0;color:#5a2a00}.cd.ap.alb span{color:#5a2a00}.cd.ap.post{border-color:#722f37;background:#f1dde0;color:#4a1b21}.cd.ap.post span{color:#4a1b21}.cd.ap.con{border-color:#3b9ede;background:#d6ebfa;color:#0b3a5c}.cd.ap.con span{color:#0b3a5c}
 .cd.ap span{font-weight:700;font-size:10.5px;color:#5a4500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-weight:600;font-size:13px}
@@ -184,7 +184,7 @@ tr.rrd{--b:#d93025}tr.rrd td{background:rgba(217,48,37,.2)}tr.rno{--b:#e0b100}tr
 .agl .ev{display:block;border-radius:7px;padding:7px 10px;font-size:14px;text-decoration:none;color:#fff;background:#d93025;line-height:1.3}
 .agl .ev.att{background:#2e9d5b}.agl .ev.ap{background:#e0b100;color:#3d2f00}.agl .ev.ap.alb{background:#e8730c;color:#fff}.agl .ev.ap.post{background:#722f37;color:#fff}.agl .ev.ap.con{background:#3b9ede;color:#fff}
 @media(max-width:700px){
-html,body{overflow-x:hidden;max-width:100vw}.grid,.two,.kpis,.formrow{min-width:0}.grid>*,.formrow>*{min-width:0}.legend span{white-space:normal}.card{max-width:100%;box-sizing:border-box}.legend{flex-wrap:wrap}
+html,body{overflow-x:clip;max-width:100vw}.grid,.two,.kpis,.formrow{min-width:0}.grid>*,.formrow>*{min-width:0}.legend span{white-space:normal}.card{max-width:100%;box-sizing:border-box}.legend{flex-wrap:wrap}
 .calcard{padding:12px 2px 12px;border-radius:12px}.calcard>.row{padding:0 10px}
 .cal-grid{gap:0;border-top:1px solid var(--line)}
 .cal-grid .cd{border:0;border-radius:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:2px 1px;gap:2px}
@@ -212,13 +212,46 @@ html,body{overflow-x:hidden;max-width:100vw}.grid,.two,.kpis,.formrow{min-width:
 .tl td:nth-child(6){grid-column:2;grid-row:4;text-align:right}.tl td:nth-child(6):before{content:'Saldo ';color:var(--muted);font-size:11px}
 }
 @media(max-width:700px){
-.two{grid-template-columns:minmax(0,1fr)!important}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-.grid>*,.two>*,.dashcal>*{min-width:0}.card{min-width:0;overflow-wrap:anywhere}
-.att span{min-width:0;overflow-wrap:anywhere}.att{min-width:0}
+.grid{grid-template-columns:minmax(0,1fr)}.two{grid-template-columns:minmax(0,1fr)!important}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.grid>*,.two>*,.dashcal>*{min-width:0}.card{min-width:0}
+.att span{min-width:0;overflow-wrap:anywhere}
+.cd.day .ev{flex:none}.att{min-width:0}
 .tabs,.row{flex-wrap:wrap}.pill{white-space:normal}
 }
 .fest{display:inline-block;width:6px;height:6px;border-radius:50%;background:#d93025;margin-left:3px;vertical-align:middle}
 .cal-grid .cd.day.t>b .fest{background:#fff}
+@media(max-width:700px){
+.f>div.s12,.f>.hint.s12{grid-column:1/-1}
+.tpw{overflow:visible}.tp thead{display:none}.tp,.tp tbody{display:block;width:100%}
+.tp tr{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;position:relative}
+.tp td{display:block;border:0!important;padding:0!important;min-width:0}
+.tp td input,.tp td select{width:100%;box-sizing:border-box;min-width:0!important}
+.tp td:nth-child(1){grid-column:1/-1}
+.tp td:nth-child(3):before{content:'Importo €';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.tp td:nth-child(2):before{content:'Data';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.tp td:nth-child(4):before{content:'Metodo';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.tp td:nth-child(5):before{content:'Ricevuto da';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.tp td:nth-child(6){grid-column:1}.tp td:nth-child(7){grid-column:2;text-align:right}
+}
+@media(max-width:700px){
+.kpi .v{font-size:21px}
+.scroll table{font-size:12px}.scroll th,.scroll td{padding:7px 5px!important}
+.tc th:nth-child(5),.tc td:nth-child(5){display:none}
+.tc{font-size:11px!important}.tc th{letter-spacing:0!important;font-size:9.5px!important}.tc th,.tc td{padding:6px 3px!important}
+.scroll td.r,.scroll th.r{white-space:nowrap}
+}
+@media(max-width:700px){
+.tli thead{display:none}.tli,.tli tbody{display:block;width:100%}
+.tli tr{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px}
+.tli td{display:block;padding:0!important;border:0!important;min-width:0}
+.tli td input{width:100%;box-sizing:border-box;min-width:0!important}
+.tli td:nth-child(1),.tli td:nth-child(2){grid-column:1/-1}
+.tli td:nth-child(3){grid-column:1}.tli td:nth-child(3) input{text-align:left!important}
+.tli td:nth-child(4){grid-column:2;text-align:right}
+.tli td:nth-child(1):before{content:'Voce';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.tli td:nth-child(2):before{content:'Descrizione';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.tli td:nth-child(3):before{content:'Prezzo \20ac';display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+}
 </style>
 </head>
 <body>
@@ -427,6 +460,7 @@ function refresh(){
   var h=S.route;
   var active=document.activeElement;var typing=active&&/INPUT|TEXTAREA|SELECT/.test(active.tagName)&&$('#main').contains(active);
   if(h==='dashboard'||h==='matrimoni'||h==='amministrazione'||h==='lavorazione'||h==='team'){if(typing)return;route2()}
+  else if(h.indexOf('lavoro-')===0&&!typing&&/non trovato/.test($('#main').textContent)&&byId(h.slice(7)))route();
   else if(h.indexOf('matrimonio-')===0&&!typing){var w=byId(h.slice(11));if(w&&JSON.stringify(w)!==S._shown){var y=window.scrollY;$('#main').innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
 }
 function route2(){var y=window.scrollY;var h=S.route;var m=$('#main');if(h==='dashboard'){m.innerHTML=viewDash();bindDash()}else if(h==='lavorazione'){m.innerHTML=viewLav();bindAdm()}else if(h==='team'){m.innerHTML=viewTeam();bindTeam()}else if(h==='amministrazione'){if(admOk()){m.innerHTML=viewAdm();bindAdm()}else{m.innerHTML=viewAdmLock();bindAdmLock()}}else{m.innerHTML=viewList();bindList()}window.scrollTo(0,y)}
@@ -547,7 +581,7 @@ function viewDash(){
   out+='<div style="margin-top:16px">';
   out+='<div class="card" style="border-color:#3b9ede"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">MATRIMONIO</span><h2 style="margin:0">In attesa di conferma · '+att.length+'</h2></div>'+(att.length?att.map(function(w){return '<div class="row" style="gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap"><a href="#matrimonio-'+esc(w.id)+'" style="text-decoration:none;color:inherit;min-width:180px"><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc([w.sposo.tel,w.email].filter(Boolean).join(' · ')||'nessun recapito')+'</div></a><div class="row" style="gap:8px;align-items:center"><label class="hint" style="margin:0">Data matrimonio<input type="date" data-pd="'+esc(w.id)+'" value="'+esc(w.data||w.dataPresunta||'')+'" style="margin-left:6px"></label><button class="btn pri" data-pc="'+esc(w.id)+'">Conferma</button><button class="btn del" data-pdel="'+esc(w.id)+'">Elimina</button></div></div>'}).join(''):'<div class="empty">Nessun matrimonio in attesa.</div>')+'<p class="hint" style="margin:8px 0 0">Appena inserisci la data il matrimonio va su Google Calendar in verde. Con Conferma diventa rosso.</p></div>';
   out+='</div>';
-  out+='<div class="grid" style="margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(480px,1fr))">';
+  out+='<div class="grid" style="margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(min(480px,100%),1fr))">';
   out+='<div class="card"><h2>Attenzioni'+(al.length?' · '+al.length:'')+'</h2>'+(al.length?al.slice(0,9).map(function(x){return '<a class="att '+x.l+'" href="#matrimonio-'+esc(x.id)+'"><i></i><span>'+esc(x.t)+'</span></a>'}).join('')+(al.length>9?'<div class="hint" style="padding-top:8px">e altre '+(al.length-9)+'</div>':''):'<div class="empty">Niente da segnalare.</div>')+'</div>';
   out+='<div class="card" style="border-color:#e0b100"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#f2c200;color:#3d2f00;border-color:transparent;font-weight:800;letter-spacing:.06em">APPUNTAMENTI</span><h2 style="margin:0">Prossimi appuntamenti</h2></div>'+(ap.length?ap.slice(0,6).map(function(x){var d=parseD(x.a.data);return '<a class="item" style="background:'+apCol(x.a.tipo).bg+';border-left:4px solid '+apCol(x.a.tipo).b+';border-radius:8px;padding-left:10px;margin-bottom:6px;color:#3d2f00;text-decoration:none" data-x="1" href="#matrimonio-'+esc(x.w.id)+'"><div class="d"><b>'+d.getDate()+'</b><span>'+MESI3[d.getMonth()]+'</span></div><div class="m"><b>'+esc(x.a.tipo)+'</b><span>'+esc(nomiSposi(x.w))+(x.a.note?' · '+esc(x.a.note):'')+'</span></div><div class="e">'+(x.a.ora?esc(x.a.ora):'')+'</div></a>'}).join(''):'<div class="empty">Nessun appuntamento fissato.</div>')+'</div>';
   out+='<div class="card"><h2>Lavorazioni</h2><div class="row" style="margin-bottom:10px">'
@@ -797,7 +831,7 @@ function viewListino(){
   var out='<div class="top"><div><h1>Listino</h1><p class="sub">Prezzi dei servizi. Nella scheda matrimonio, scrivendo il nome di una voce il prezzo si compila da solo.</p></div></div>';
   CATS.forEach(function(c){
     var v=S.listino.map(function(x,i){return {x:x,i:i}}).filter(function(r){return r.x.cat===c[0]});
-    out+='<div class="card sect"><h2>'+c[1]+'</h2>'+(v.length?'<div class="scroll"><table><thead><tr><th>Voce</th><th>Descrizione</th><th class="r">Prezzo €</th><th></th></tr></thead><tbody>'+v.map(function(r){
+    out+='<div class="card sect"><h2>'+c[1]+'</h2>'+(v.length?'<div class="scroll"><table class="tli"><thead><tr><th>Voce</th><th>Descrizione</th><th class="r">Prezzo €</th><th></th></tr></thead><tbody>'+v.map(function(r){
       return '<tr><td><input data-li="'+r.i+'.nome" value="'+esc(r.x.nome)+'" style="min-width:170px"></td><td><input data-li="'+r.i+'.desc" value="'+esc(r.x.desc||'')+'" style="min-width:200px"></td><td><input data-li="'+r.i+'.prezzo" inputmode="decimal" value="'+(r.x.prezzo?esc(String(r.x.prezzo).replace('.',',')):'')+'" style="min-width:90px;text-align:right"></td><td><button class="btn sm del" data-dell="'+r.i+'" aria-label="Elimina voce">×</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty" style="padding-top:0">Nessuna voce.</div>')
      +'<div class="row" style="margin-top:10px"><button class="btn" data-addl="'+c[0]+'">Aggiungi voce</button></div></div>';
   });
@@ -890,7 +924,7 @@ function viewAdm(){
    +kpi('Già incassato',eur(T.inc),T.tot?Math.round(T.inc/Math.max(1,T.tot-T.sco)*100)+'% del totale':'')
    +kpi('Ancora da incassare',eur(rest),'saldi aperti')
    +kpi('Fatture da emettere',String(nonFatture(list)),'pagamenti senza fattura')+'</div>';
-  out+='<div class="card sect"><h2>Divisione per categoria</h2><div class="scroll"><table><thead><tr><th>Categoria</th><th class="r">Totale</th><th class="r">Incassato</th><th class="r">Da incassare</th><th style="min-width:140px">Avanzamento</th></tr></thead><tbody>'
+  out+='<div class="card sect"><h2>Divisione per categoria</h2><div class="scroll"><table class="tc"><thead><tr><th>Categoria</th><th class="r">Totale</th><th class="r">Incassato</th><th class="r">Da incassare</th><th style="min-width:140px">Avanzamento</th></tr></thead><tbody>'
    +CATS.map(function(x){var d=D.c[x[0]],net=d.tot-d.sco,r=net-d.inc,pc=net>0?Math.min(100,Math.round(d.inc/net*100)):0;
      return '<tr><td><b>'+x[1]+'</b></td><td class="r">'+eur(net)+'</td><td class="r">'+eur(d.inc)+'</td><td class="r"><b>'+eur(r)+'</b></td><td><div style="height:8px;border-radius:4px;background:var(--pale);overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--accent)"></div></div></td></tr>'}).join('')
    +'<tr><td><b>Totale</b></td><td class="r"><b>'+eur(T.tot-T.sco)+'</b></td><td class="r"><b>'+eur(T.inc)+'</b></td><td class="r"><b>'+eur(rest)+'</b></td><td></td></tr></tbody></table></div>'
@@ -1007,7 +1041,7 @@ function viewW(w){
   out+='<p class="hint" style="margin:10px 0 0">Chi lavora al matrimonio, lo stato e i link si gestiscono nella sezione <a href="#team">Team</a>.</p></div>';
 
   // pagamenti
-  out+='<div class="card sect"><h2>Caparra confirmatoria e pagamenti</h2><div class="scroll"><table><thead><tr><th>Tipo</th><th>Data</th><th>Importo €</th><th>Metodo</th><th>Ricevuto da</th><th>Fattura</th><th></th></tr></thead><tbody>';
+  out+='<div class="card sect"><h2>Caparra confirmatoria e pagamenti</h2><div class="scroll tpw"><table class="tp"><thead><tr><th>Tipo</th><th>Data</th><th>Importo €</th><th>Metodo</th><th>Ricevuto da</th><th>Fattura</th><th></th></tr></thead><tbody>';
   out+=w.pagamenti.map(function(p,i){
     return '<tr><td><select data-pp="'+i+'.tipo"><option value="acconto"'+(p.tipo!=='sconto'?' selected':'')+'>Caparra confirmatoria</option><option value="sconto"'+(p.tipo==='sconto'?' selected':'')+'>Sconto</option></select></td>'
      +'<td><input type="date" data-pp="'+i+'.data" value="'+esc(p.data||'')+'"></td>'
