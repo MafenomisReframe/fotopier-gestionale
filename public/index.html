@@ -1359,6 +1359,13 @@ async function makePdf(w,mail,silent){
 }
 
 /* ---------- avvio ---------- */
+function autoImp26(){
+  if(S.imp26Tried||!S.live||!S.setLoaded||S.set.imp26||!S.db)return;S.imp26Tried=true;
+  if(S.weddings.some(function(w){return w.importato2026})){S.set.imp26='1';persistSet();return}
+  fetch('import2026.json',{cache:'no-store'}).then(function(r){return r.json()}).then(async function(L){
+    var n=0;for(var i=0;i<L.length;i++){var w=L[i];if(byId(w.id))continue;w.creato=w.creato||Date.now();S.weddings.push(w);n++;await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)))}
+    S.set.imp26='1';persistSet();sortW();renumber();refresh();if(n)toast('Importati '+n+' matrimoni 2026')}).catch(function(){S.imp26Tried=false});
+}
 function start(){
   route();
   var timer=setTimeout(function(){if(!S.loaded){S.loaded=true;refresh()}},10000);
@@ -1367,10 +1374,10 @@ function start(){
     S.db=db;nav();
     db.collection('matrimoni').onSnapshot(function(snap){
       clearTimeout(timer);S.loaded=true;if(!snap.metadata.fromCache)S.live=true;
-      S.weddings=snap.docs.map(function(d){return d.data()});sortW();renumber();refresh();
+      S.weddings=snap.docs.map(function(d){return d.data()});sortW();renumber();refresh();autoImp26();
     },function(){nav()});
     db.doc('impostazioni/listino').onSnapshot(function(d){if(d.exists&&Array.isArray(d.data().voci)){S.listino=d.data().voci;if(S.route==='listino'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route()}},function(){});
-    db.doc('impostazioni/studio').onSnapshot(function(d){S.setLoaded=true;setTimeout(lockRender,0);if(d.exists){var prev=S.set;S.set=Object.assign({},DEFAULT_SET,d.data());S.set.team=(S.set.team||[]).slice();(prev.team||[]).forEach(function(n){if(S.set.team.indexOf(n)<0)S.set.team.push(n)});S.set.teamMail=Object.assign({},(prev.teamMail||{}),(d.data().teamMail||{}));if(S.route==='impostazioni'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route();else if(S.route==='team')refresh()}},function(){});
+    db.doc('impostazioni/studio').onSnapshot(function(d){S.setLoaded=true;setTimeout(lockRender,0);setTimeout(autoImp26,800);if(d.exists){var prev=S.set;S.set=Object.assign({},DEFAULT_SET,d.data());S.set.team=(S.set.team||[]).slice();(prev.team||[]).forEach(function(n){if(S.set.team.indexOf(n)<0)S.set.team.push(n)});S.set.teamMail=Object.assign({},(prev.teamMail||{}),(d.data().teamMail||{}));if(S.route==='impostazioni'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route();else if(S.route==='team')refresh()}},function(){});
   }).catch(function(){nav()});
 }
 if(window.claude&&claude.use)start();else{route()}
