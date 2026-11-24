@@ -88,7 +88,7 @@ tr.click:hover td{background:var(--pale)}
 .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:8px}
 .legend span:before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;background:var(--accent)}
 .legend span.in:before{background:var(--ink)}
-.legend span.ap:before{background:#e0b100}.legend span.po:before{background:#722f37}.legend span.mc:before{background:#d93025}.legend span.mv:before{background:#2e9d5b}
+.legend span.ap:before{background:#e0b100}.legend span.po:before{background:#722f37}.legend span.co:before{background:#e8730c}.legend span.mc:before{background:#d93025}.legend span.mv:before{background:#2e9d5b}
 /* form */
 .f{display:grid;gap:10px;grid-template-columns:repeat(12,minmax(0,1fr));margin-bottom:10px}
 .f label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;grid-column:span 4}
@@ -137,7 +137,7 @@ textarea{resize:vertical;min-height:64px}
 .cd.w{background:#d93025;color:#fff;border-color:#d93025}
 .cd.w.att{background:#2e9d5b;color:#fff;border:1px solid #2e9d5b}.cd.w span{font-weight:700;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cd.ap{border-color:#e0b100;background:#fff3b0;color:#5a4500}
-.cd.ap.post{border-color:#722f37;background:#f1dde0;color:#4a1b21}.cd.ap.post span{color:#4a1b21}
+.cd.ap.post{border-color:#722f37;background:#f1dde0;color:#4a1b21}.cd.ap.post span{color:#4a1b21}.cd.ap.con{border-color:#e8730c;background:#ffd9b0;color:#5a2a00}.cd.ap.con span{color:#5a2a00}
 .cd.ap span{font-weight:700;font-size:10.5px;color:#5a4500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-weight:600;font-size:13px}
 .att:first-of-type{border-top:0}
@@ -205,6 +205,7 @@ var STATI=[['da_fare','Da fare'],['in_corso','In corso'],['finito','Finito'],['c
 var TIPI_PRE=['Info','Contratto'],TIPI_POST=['Visione impaginato','Ritiro album','Consegna video','Ritiro'];
 var TIPI_APP=TIPI_PRE.concat(TIPI_POST);
 function isPost(t){return TIPI_POST.indexOf(t)>=0}
+function apCol(t){return isPost(t)?{b:'#722f37',bg:'#f1dde0',ink:'#fff',g:'3'}:t==='Contratto'?{b:'#e8730c',bg:'#ffd9b0',ink:'#fff',g:'6'}:{b:'#e0b100',bg:'#fff3b0',ink:'#3d2f00',g:'5'}}
 var METODI=['Bonifico','Contanti','Assegno','Carta','Altro'];
 var DEFAULT_SET={titolare:'Simone Mafessoni',piva:'04256030984',indirizzo:'Via Mulini 68 · 25039 Travagliato (BS)',tel:'Pier 338 4426451 · Simone 334 7172807',web:'www.fotopier.com · info@fotopier.com',iban:'IT80J0538754870000004693671',intestatario:'Simone Mafessoni',mailBonifico:'weddingfotopier@gmail.com',team:['Pier','Simone','Emilio','Andrea'],calendarId:'weddingfotopier@gmail.com'};
 
@@ -369,10 +370,10 @@ function calendario(){
     var ds=y+'-'+two(m+1)+'-'+two(d),ws=by[d]||[],isT=ds===tod;
     if(ws.length){var w=ws[0];var sur=(w.sposo.nome||w.sposa.nome||'Matrimonio').split(' ')[0];
       var anyAtt=ws.some(function(x){return x.attesa});cells+='<a class="cd w'+(anyAtt?' att':'')+(isT?' t':'')+'" '+(anyAtt?'data-day="'+ds+'" href="#"':'href="#matrimonio-'+esc(w.id)+'"')+' title="'+esc(ws.map(nomiSposi).join(' / '))+'"><b>'+d+'</b><span>'+esc(sur)+(ws.length>1?' +'+(ws.length-1):'')+'</span></a>'}
-    else if(apBy[d]){var ap=apBy[d][0];cells+='<a class="cd ap'+(isPost(ap.a.tipo)?' post':'')+(isT?' t':'')+'" data-day="'+ds+'" href="#" title="'+esc(apBy[d].map(function(x){return x.a.tipo+' · '+nomiSposi(x.w)}).join(' / '))+'"><b>'+d+'</b><span>'+esc(ap.a.tipo.split(' ')[0])+(ap.a.ora?' '+esc(ap.a.ora):'')+'</span></a>'}
+    else if(apBy[d]){var ap=apBy[d][0];cells+='<a class="cd ap'+(isPost(ap.a.tipo)?' post':ap.a.tipo==='Contratto'?' con':'')+(isT?' t':'')+'" data-day="'+ds+'" href="#" title="'+esc(apBy[d].map(function(x){return x.a.tipo+' · '+nomiSposi(x.w)}).join(' / '))+'"><b>'+d+'</b><span>'+esc(ap.a.tipo.split(' ')[0])+(ap.a.ora?' '+esc(ap.a.ora):'')+'</span></a>'}
     else cells+='<div class="cd'+(isT?' t':'')+'"><b>'+d+'</b></div>';
   }
-  return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Calendario</h2><div class="row" style="gap:6px"><button class="btn sm" id="calP" aria-label="Mese precedente">‹</button><b style="min-width:130px;text-align:center;text-transform:capitalize">'+MESI[m]+' '+y+'</b><button class="btn sm" id="calN" aria-label="Mese successivo">›</button></div></div><div class="cal-grid">'+cells+'</div><div class="legend"><span style="--x:1" class="mc">Matrimonio confermato</span><span class="mv">In attesa</span><span class="ap">Appuntamento</span><span class="po">Post</span></div></div>';
+  return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Calendario</h2><div class="row" style="gap:6px"><button class="btn sm" id="calP" aria-label="Mese precedente">‹</button><b style="min-width:130px;text-align:center;text-transform:capitalize">'+MESI[m]+' '+y+'</b><button class="btn sm" id="calN" aria-label="Mese successivo">›</button></div></div><div class="cal-grid">'+cells+'</div><div class="legend"><span style="--x:1" class="mc">Matrimonio confermato</span><span class="mv">In attesa</span><span class="ap">Appuntamento</span><span class="co">Contratto</span><span class="po">Post</span></div></div>';
 }
 function dayPop(ds){
   var old=document.getElementById('dayPop');if(old)old.remove();
@@ -385,8 +386,8 @@ function dayPop(ds){
        +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a></div></div>';
     }
     (w.appuntamenti||[]).forEach(function(a){
-      if(a.data!==ds||a.fatto)return;var po=isPost(a.tipo),col=po?'#722f37':'#e0b100';
-      h+='<div class="card" style="border-color:'+col+';margin-bottom:10px"><div class="row" style="gap:8px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+col+';color:'+(po?'#fff':'#3d2f00')+';border-color:transparent;font-weight:800">'+esc(a.tipo.toUpperCase())+'</span><b>'+(a.ora?esc(a.ora):'tutto il giorno')+'</b></div><b>'+esc(nomiSposi(w))+'</b>'
+      if(a.data!==ds||a.fatto)return;var po=isPost(a.tipo),col=apCol(a.tipo).b;
+      h+='<div class="card" style="border-color:'+col+';margin-bottom:10px"><div class="row" style="gap:8px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+col+';color:'+apCol(a.tipo).ink+';border-color:transparent;font-weight:800">'+esc(a.tipo.toUpperCase())+'</span><b>'+(a.ora?esc(a.ora):'tutto il giorno')+'</b></div><b>'+esc(nomiSposi(w))+'</b>'
        +row('Telefono',esc([w.sposo.tel,w.sposa&&w.sposa.tel].filter(Boolean).join(' · ')))+row('Email',esc(w.email||''))
        +row('Data matrimonio',w.data?esc(dlong(w.data)):'')+row('Cerimonia',esc((w.chiesa&&w.chiesa.nome)||''))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))+row('Note',esc(a.note||''))
        +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a>'+(a.calEventLink?' <a class="btn sm" target="_blank" rel="noopener" href="'+esc(a.calEventLink)+'">Apri su Google Calendar</a>':'')+'</div></div>';
@@ -435,7 +436,7 @@ function viewDash(){
   out+='</div>';
   out+='<div class="grid" style="margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(480px,1fr))">';
   out+='<div class="card"><h2>Attenzioni'+(al.length?' · '+al.length:'')+'</h2>'+(al.length?al.slice(0,9).map(function(x){return '<a class="att '+x.l+'" href="#matrimonio-'+esc(x.id)+'"><i></i><span>'+esc(x.t)+'</span></a>'}).join('')+(al.length>9?'<div class="hint" style="padding-top:8px">e altre '+(al.length-9)+'</div>':''):'<div class="empty">Niente da segnalare.</div>')+'</div>';
-  out+='<div class="card" style="border-color:#e0b100"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#f2c200;color:#3d2f00;border-color:transparent;font-weight:800;letter-spacing:.06em">APPUNTAMENTI</span><h2 style="margin:0">Prossimi appuntamenti</h2></div>'+(ap.length?ap.slice(0,6).map(function(x){var d=parseD(x.a.data);return '<a class="item" style="background:'+(isPost(x.a.tipo)?'#f1dde0':'#fff3b0')+';border-left:4px solid '+(isPost(x.a.tipo)?'#722f37':'#e0b100')+';border-radius:8px;padding-left:10px;margin-bottom:6px;color:#3d2f00;text-decoration:none" data-x="1" href="#matrimonio-'+esc(x.w.id)+'"><div class="d"><b>'+d.getDate()+'</b><span>'+MESI3[d.getMonth()]+'</span></div><div class="m"><b>'+esc(x.a.tipo)+'</b><span>'+esc(nomiSposi(x.w))+(x.a.note?' · '+esc(x.a.note):'')+'</span></div><div class="e">'+(x.a.ora?esc(x.a.ora):'')+'</div></a>'}).join(''):'<div class="empty">Nessun appuntamento fissato.</div>')+'</div>';
+  out+='<div class="card" style="border-color:#e0b100"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#f2c200;color:#3d2f00;border-color:transparent;font-weight:800;letter-spacing:.06em">APPUNTAMENTI</span><h2 style="margin:0">Prossimi appuntamenti</h2></div>'+(ap.length?ap.slice(0,6).map(function(x){var d=parseD(x.a.data);return '<a class="item" style="background:'+apCol(x.a.tipo).bg+';border-left:4px solid '+apCol(x.a.tipo).b+';border-radius:8px;padding-left:10px;margin-bottom:6px;color:#3d2f00;text-decoration:none" data-x="1" href="#matrimonio-'+esc(x.w.id)+'"><div class="d"><b>'+d.getDate()+'</b><span>'+MESI3[d.getMonth()]+'</span></div><div class="m"><b>'+esc(x.a.tipo)+'</b><span>'+esc(nomiSposi(x.w))+(x.a.note?' · '+esc(x.a.note):'')+'</span></div><div class="e">'+(x.a.ora?esc(x.a.ora):'')+'</div></a>'}).join(''):'<div class="empty">Nessun appuntamento fissato.</div>')+'</div>';
   out+='<div class="card"><h2>Lavorazioni</h2><div class="row" style="margin-bottom:10px">'
    +STATI.map(function(s){return '<span class="pill '+(s[0]==='consegnato'?'good':s[0]==='finito'?'info':s[0]==='in_corso'?'warn':'')+'">'+s[1]+' · '+cnt[s[0]]+'</span>'}).join('')+'</div>'
    +(lav.length?lav.map(function(w){return itemW(w,'',timerPill(w))}).join(''):'<div class="empty">Nessun lavoro da completare.</div>')+'</div>';
@@ -507,7 +508,7 @@ function bindDash(){
           if(o){var hh=+o.slice(0,2),mm=o.slice(3,5);startTime=d+'T'+o+':00';endTime=d+'T'+two(Math.min(hh+1,23))+':'+mm+':00'}
           else{startTime=iso(st)+'T00:00:00';endTime=iso(en)+'T00:00:00'}
           var desc=[note,'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||'')].filter(Boolean).join('\n');
-          var res=await mcp.callTool('Google Calendar','create_event',{calendarId:S.set.calendarId||'weddingfotopier@gmail.com',summary:tipo+' – '+nomiSposi(w),startTime:startTime,endTime:endTime,allDay:!o,colorId:isPost(tipo)?'3':'5',description:desc,notificationLevel:'NONE'});
+          var res=await mcp.callTool('Google Calendar','create_event',{calendarId:S.set.calendarId||'weddingfotopier@gmail.com',summary:tipo+' – '+nomiSposi(w),startTime:startTime,endTime:endTime,allDay:!o,colorId:apCol(tipo).g,description:desc,notificationLevel:'NONE'});
           var pl=res&&res.payload;if(typeof pl==='string'){try{pl=JSON.parse(pl)}catch(e){pl=null}}
           var ev=pl&&(pl.event||pl);
           if(ev&&(ev.id||ev.eventId))ap.calEventId=ev.id||ev.eventId;
