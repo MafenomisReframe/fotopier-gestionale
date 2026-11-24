@@ -904,7 +904,7 @@ function viewW(w){
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
    +(w===S.bozza?'<div class="row"><button class="btn pri" id="linkBozza" style="background:#d93025;border-color:#d93025;color:#fff">Collega a un evento già creato</button><button class="btn pri" id="okBozza" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Conferma e salva contratto</button><button class="btn" id="noBozza">Annulla</button></div></div><div class="card" style="border-color:#e0b100;margin-bottom:14px"><b>Bozza non ancora salvata.</b> <span class="hint">Il contratto viene creato solo quando premi "Conferma e salva contratto". Se esci, non viene salvato nulla.</span></div>'
-   :'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
+   :'<div class="row"><button class="btn pri savew" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Salva modifiche</button><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
@@ -980,6 +980,11 @@ function svcPop(w,i,done){
 }
 function bindW(w){
   var m=$('#main');
+  m.querySelectorAll('.savew').forEach(function(b){b.addEventListener('click',function(){
+    try{document.activeElement&&document.activeElement.blur()}catch(e){}
+    setTimeout(async function(){
+      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713')}
+      catch(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))}},80)})});
   function changed(rerender){syncFinito(w);S._shown=JSON.stringify(w);persist(w);if(rerender){var y=window.scrollY;m.innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
   m.querySelectorAll('[data-p]').forEach(function(el){
     el.addEventListener('input',function(){setp(w,el.dataset.p,el.value);S._shown=JSON.stringify(w);persist(w);if(el.dataset.p==='sposo.nome'||el.dataset.p==='sposa.nome'){var h=$('h1');if(h)h.textContent=nomiSposi(w)}});
