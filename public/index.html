@@ -984,7 +984,7 @@ function bindW(w){
   m.querySelectorAll('.savew').forEach(function(b){b.addEventListener('click',function(){
     try{document.activeElement&&document.activeElement.blur()}catch(e){}
     setTimeout(async function(){
-      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713')}
+      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713');location.hash='dashboard'}
       catch(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))}},80)})});
   function changed(rerender){syncFinito(w);S._shown=JSON.stringify(w);persist(w);if(rerender){var y=window.scrollY;m.innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
   m.querySelectorAll('[data-p]').forEach(function(el){
