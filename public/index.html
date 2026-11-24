@@ -384,12 +384,7 @@ function viewDash(){
   var prox=prossimi[0],dd=prox?daysTo(prox.data):null;
   var al=[];all.forEach(function(w){al=al.concat(attenzioni(w))});
   var ord={bad:0,warn:1,info:2};al.sort(function(a,b){return ord[a.l]-ord[b.l]});
-  var out='<div class="top"><div><h1>Dashboard</h1><p class="sub">Anno '+anno+'</p></div><div class="row" style="gap:8px;align-items:center"><details class="nl" id="qkNl"><summary class="btn pri" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">+ Matrimonio in attesa</summary><div class="card nlp"><b>Matrimonio in attesa di conferma</b><div class="f" style="margin-top:10px">'
-   +'<label class="s6">Sposo<input id="qSpo" placeholder="Nome e cognome"></label><label class="s6">Sposa<input id="qSpa" placeholder="Nome e cognome"></label>'
-   +'<label class="s6">Data matrimonio<input type="date" id="qData"></label><label class="s6">Telefono<input id="qTel" type="tel"></label>'
-   +'<label class="s6">Cerimonia (luogo)<input id="qChi" placeholder="Es. San Pietro, Brescia"></label><label class="s6">Ora cerimonia<input id="qOra" type="time"></label>'
-   +'<label class="s12">Location ricevimento<input id="qLoc" placeholder="Ristorante o villa"></label></div>'
-   +'<div class="row" style="gap:10px;align-items:center;margin-top:12px"><button class="btn pri" id="qS" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Invia e metti in calendario</button><span class="hint" id="qM"></span></div></div></details><a class="btn pri" href="#matrimonio-nuovo" id="newTop">Nuovo matrimonio</a></div></div>';
+  var out='<div class="top"><div><h1>Dashboard</h1><p class="sub">Anno '+anno+'</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop">Nuovo matrimonio</a></div>';
   if(!S.db)out+='<div class="banner">Questa copia non salva i dati: aprila dal tuo account per salvarli online.</div>';
   var att=all.filter(function(w){return w.attesa});
   if(att.length)out+='<div class="card" style="border-color:#2e9d5b"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#2e9d5b;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">MATRIMONIO</span><h2 style="margin:0">In attesa di conferma · '+att.length+'</h2></div>'+att.map(function(w){return '<div class="row" style="gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap"><a href="#matrimonio-'+esc(w.id)+'" style="text-decoration:none;color:inherit;min-width:180px"><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc([w.sposo.tel,w.email].filter(Boolean).join(' · ')||'nessun recapito')+'</div></a><div class="row" style="gap:8px;align-items:center"><label class="hint" style="margin:0">Data matrimonio<input type="date" data-pd="'+esc(w.id)+'" value="'+esc(w.data||'')+'" style="margin-left:6px"></label><button class="btn pri" data-pc="'+esc(w.id)+'">Conferma</button></div></div>'}).join('')+'<p class="hint" style="margin:8px 0 0">Appena inserisci la data il matrimonio va su Google Calendar in verde. Con Conferma diventa rosso.</p></div>';
@@ -414,6 +409,12 @@ function viewDash(){
    +'<label class="row" style="gap:8px;margin:10px 0;text-transform:none;letter-spacing:0;font-weight:600;flex-wrap:nowrap"><input type="checkbox" id="apC" checked style="width:auto">Metti anche in Google Calendar</label>'
    +'<div class="row" style="gap:10px;align-items:center"><button class="btn pri" id="apS">Salva appuntamento</button><span class="hint" id="apM"></span></div></div></details></div>'+(ap.length?ap.slice(0,6).map(function(x){var d=parseD(x.a.data);return '<a class="item" href="#matrimonio-'+esc(x.w.id)+'" style="text-decoration:none;color:inherit"><div class="d"><b>'+d.getDate()+'</b><span>'+MESI3[d.getMonth()]+'</span></div><div class="m"><b>'+esc(x.a.tipo)+'</b><span>'+esc(nomiSposi(x.w))+(x.a.note?' · '+esc(x.a.note):'')+'</span></div><div class="e">'+(x.a.ora?esc(x.a.ora):'')+'</div></a>'}).join(''):'<div class="empty">Nessun appuntamento fissato.</div>')+'</div>';
   out+='<div class="card"><h2>Prossimi matrimoni</h2>'+(prossimi.length?prossimi.map(function(w){return itemW(w)}).join(''):'<div class="empty">Nessun matrimonio in programma.</div>')+'</div>';
+  out+='<div class="card" style="border-color:#2e9d5b"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#2e9d5b;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">MATRIMONIO</span><h2 style="margin:0">In attesa di conferma</h2></div><div class="f">'
+   +'<label class="s6">Sposo<input id="qSpo" placeholder="Nome e cognome"></label><label class="s6">Sposa<input id="qSpa" placeholder="Nome e cognome"></label>'
+   +'<label class="s6">Data matrimonio<input type="date" id="qData"></label><label class="s6">Telefono<input id="qTel" type="tel"></label>'
+   +'<label class="s6">Cerimonia (luogo)<input id="qChi" placeholder="Es. San Pietro, Brescia"></label><label class="s6">Ora cerimonia<input id="qOra" type="time"></label>'
+   +'<label class="s12">Location ricevimento<input id="qLoc" placeholder="Ristorante o villa"></label></div>'
+   +'<div class="row" style="gap:10px;align-items:center;margin-top:12px"><button class="btn pri" id="qS" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Invia e metti in calendario</button><span class="hint" id="qM"></span></div></div>';
   out+='</div>';
   return out;
 }
@@ -428,8 +429,8 @@ function bindDash(){
     var m='Matrimonio confermato';
     if(w.data){try{await calSync(w);persist(w);m+=' e calendario aggiornato (rosso)'}catch(e){m+=' (calendario non aggiornato: '+calErr(e)+')'}}
     toast(m);route2()})});
-  var qk=$('#qkNl');
-  if(qk){qk.addEventListener('click',function(e){if(e.target===qk)qk.open=false});
+  var qk=$('#qS');
+  if(qk){
     var qOk=false;
     $('#qData').addEventListener('change',function(){qOk=false;$('#qS').textContent='Invia e metti in calendario';var c=apConfl(this.value,'').filter(function(x){return /^Matrimonio/.test(x)});$('#qM').textContent=c.length?'Attenzione: '+c.join(' · '):'';$('#qM').style.color=c.length?'#b45309':''});
     $('#qS').addEventListener('click',async function(){
