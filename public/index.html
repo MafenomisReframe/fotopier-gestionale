@@ -201,7 +201,7 @@ var SERVIZI=[
   {k:'share',label:'Share Love',desc:''},
   {k:'casa',label:'Casa sposo',desc:''}];
 var STATI=[['da_fare','Da fare'],['in_corso','In corso'],['finito','Finito'],['consegnato','Consegnato']];
-var TIPI_APP=['Visione impaginato','Programma consegna matrimonio','Sopralluogo','Scelta foto','Altro'];
+var TIPI_APP=['Visione impaginato','Info','Ritiro'];
 var METODI=['Bonifico','Contanti','Assegno','Carta','Altro'];
 var DEFAULT_SET={titolare:'Simone Mafessoni',piva:'04256030984',indirizzo:'Via Mulini 68 · 25039 Travagliato (BS)',tel:'Pier 338 4426451 · Simone 334 7172807',web:'www.fotopier.com · info@fotopier.com',iban:'IT80J0538754870000004693671',intestatario:'Simone Mafessoni',mailBonifico:'weddingfotopier@gmail.com',team:['Pier','Simone','Emilio','Andrea'],calendarId:'weddingfotopier@gmail.com'};
 
@@ -689,7 +689,7 @@ function viewW(w){
   out+='<div class="card sect"><h2>Appuntamenti</h2>';
   var aps=w.appuntamenti||[];
   out+=aps.length?'<div class="scroll"><table><thead><tr><th>Appuntamento</th><th>Data</th><th>Ora</th><th>Note</th><th>Fatto</th><th></th></tr></thead><tbody>'+aps.map(function(a,i){
-    return '<tr><td><select data-ap="'+i+'.tipo">'+TIPI_APP.map(function(t){return '<option'+(a.tipo===t?' selected':'')+'>'+esc(t)+'</option>'}).join('')+'</select></td>'
+    return '<tr><td><select data-ap="'+i+'.tipo">'+TIPI_APP.concat(a.tipo&&TIPI_APP.indexOf(a.tipo)<0?[a.tipo]:[]).map(function(t){return '<option'+(a.tipo===t?' selected':'')+'>'+esc(t)+'</option>'}).join('')+'</select></td>'
      +'<td><input type="date" data-ap="'+i+'.data" value="'+esc(a.data||'')+'"></td><td><input type="time" data-ap="'+i+'.ora" value="'+esc(a.ora||'')+'" style="min-width:100px"></td>'
      +'<td><input data-ap="'+i+'.note" value="'+esc(a.note||'')+'" placeholder="Dove, con chi, cosa portare" style="min-width:160px"></td>'
      +'<td><input type="checkbox" style="width:auto" data-ap="'+i+'.fatto" '+(a.fatto?'checked':'')+' aria-label="Fatto"></td>'
