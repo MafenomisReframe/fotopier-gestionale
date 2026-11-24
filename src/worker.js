@@ -53,8 +53,15 @@ async function googleToken(env) {
 }
 async function calendar(env, tool, input) {
   if (!env.GOOGLE_SA_JSON) return json({ error: 'Google Calendar non configurato' }, 501);
-  if (tool !== 'create_event' && tool !== 'update_event') return json({ error: 'Operazione non consentita' }, 400);
+  if (tool !== 'create_event' && tool !== 'update_event' && tool !== 'delete_event') return json({ error: 'Operazione non consentita' }, 400);
   const calId = input.calendarId || env.CALENDAR_ID;
+  if (tool === 'delete_event') {
+    if (!calId || !input.eventId) return json({ error: 'eventId mancante' }, 400);
+    const tk = await googleToken(env);
+    const dr = await fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events/' + encodeURIComponent(input.eventId) + '?sendUpdates=none', { method: 'DELETE', headers: { Authorization: 'Bearer ' + tk } });
+    if (!dr.ok && dr.status !== 404 && dr.status !== 410) { let m = 'Errore Google'; try { const j = await dr.json(); m = (j.error && j.error.message) || m; } catch (e) {} return json({ error: m, code: dr.status }, 502); }
+    return json({ payload: { deleted: true } });
+  }
   if (!calId || typeof input.summary !== 'string' && tool === 'create_event') return json({ error: 'Dati evento mancanti' }, 400);
   const body = {};
   if (input.summary !== undefined) body.summary = String(input.summary).slice(0, 300);

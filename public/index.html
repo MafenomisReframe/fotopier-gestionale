@@ -400,12 +400,13 @@ function dayPop(ds){
        +row('Cerimonia',esc([w.chiesa&&w.chiesa.nome,w.ora].filter(Boolean).join(' · ')))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))+row('Note calendario',esc(w.calNote||''))
        +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a>'+(w.attesa?'<button class="btn sm pri" data-popc="'+esc(w.id)+'">Conferma matrimonio</button>':'')+'</div></div>';
     }
-    (w.appuntamenti||[]).forEach(function(a){
+    (w.appuntamenti||[]).forEach(function(a,ai){
       if(a.data!==ds||a.fatto)return;var po=isPost(a.tipo),col=apCol(a.tipo).b;
       h+='<div class="card" style="border-color:'+col+';margin-bottom:10px"><div class="row" style="gap:8px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+col+';color:'+apCol(a.tipo).ink+';border-color:transparent;font-weight:800">'+esc(a.tipo.toUpperCase())+'</span><b>'+(a.ora?esc(a.ora):'tutto il giorno')+'</b></div><b>'+esc(nomiSposi(w))+'</b>'
        +row('Telefono',esc([w.sposo.tel,w.sposa&&w.sposa.tel].filter(Boolean).join(' · ')))+row('Email',esc(w.email||''))
        +row('Data matrimonio',w.data?esc(dlong(w.data)):'')+row('Cerimonia',esc((w.chiesa&&w.chiesa.nome)||''))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))+row('Note',esc(a.note||''))
-       +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a>'+(a.calEventLink?' <a class="btn sm" target="_blank" rel="noopener" href="'+esc(a.calEventLink)+'">Apri su Google Calendar</a>':'')+'</div></div>';
+       +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a>'+(a.calEventLink?' <a class="btn sm" target="_blank" rel="noopener" href="'+esc(a.calEventLink)+'">Apri su Google Calendar</a>':'')+'</div>'
+       +'<div class="row" style="margin-top:10px;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px"><label class="hint" style="margin:0">Sposta al giorno<input type="date" data-mvd="'+esc(w.id)+'|'+ai+'" value="'+esc(a.data)+'" style="margin-left:6px"></label><button class="btn sm pri" data-mv="'+esc(w.id)+'|'+ai+'">Sposta</button><button class="btn sm" data-del="'+esc(w.id)+'|'+ai+'" style="margin-left:auto;color:#d93025;border-color:#d93025">Elimina</button></div></div>';
     });
   });
   if(!h)return;
@@ -416,6 +417,25 @@ function dayPop(ds){
   var kd=function(e){if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
   m.addEventListener('click',function(e){if(e.target===m)close()});document.getElementById('dayX').addEventListener('click',close);
   m.querySelectorAll('a[href^="#matrimonio"]').forEach(function(a){a.addEventListener('click',close)});
+  var apOf=function(k){var q=k.split('|'),w=byId(q[0]);return w?{w:w,a:(w.appuntamenti||[])[+q[1]],i:+q[1]}:null};
+  var apTimes=function(a){var o=a.ora,d=a.data;if(o){var hh=+o.slice(0,2),mm=o.slice(3,5);return {startTime:d+'T'+o+':00',endTime:d+'T'+two(Math.min(hh+1,23))+':'+mm+':00',allDay:false}}
+    var st=parseD(d),en=new Date(st.getFullYear(),st.getMonth(),st.getDate()+1),iso=function(x){return x.getFullYear()+'-'+two(x.getMonth()+1)+'-'+two(x.getDate())};
+    return {startTime:iso(st)+'T00:00:00',endTime:iso(en)+'T00:00:00',allDay:true}};
+  m.querySelectorAll('[data-mv]').forEach(function(bt){bt.addEventListener('click',async function(){
+    var r=apOf(bt.dataset.mv);if(!r||!r.a)return;var nd=m.querySelector('[data-mvd="'+bt.dataset.mv+'"]').value;
+    if(!nd||nd===r.a.data){toast('Scegli un altro giorno');return}
+    r.a.data=nd;persist(r.w);close();var msg='Appuntamento spostato al '+dshort(nd);
+    if(r.a.calEventId){try{var mcp=await claude.use('mcp');var t=apTimes(r.a);
+      await mcp.callTool('Google Calendar','update_event',{calendarId:S.set.calendarId||'weddingfotopier@gmail.com',eventId:r.a.calEventId,startTime:t.startTime,endTime:t.endTime,allDay:t.allDay,notificationLevel:'NONE'});msg+=' e calendario aggiornato'}
+      catch(e){msg+=' (calendario non aggiornato: '+calErr(e)+')'}}
+    toast(msg);route2()})});
+  m.querySelectorAll('[data-del]').forEach(function(bt){bt.addEventListener('click',async function(){
+    if(!bt.dataset.armed){bt.dataset.armed='1';bt.textContent='Sicuro? Clicca ancora';setTimeout(function(){if(document.body.contains(bt)){delete bt.dataset.armed;bt.textContent='Elimina'}},4000);return}
+    var r=apOf(bt.dataset.del);if(!r||!r.a)return;var ev=r.a.calEventId;
+    r.w.appuntamenti.splice(r.i,1);persist(r.w);close();var msg='Appuntamento eliminato';
+    if(ev){try{var mcp=await claude.use('mcp');await mcp.callTool('Google Calendar','delete_event',{calendarId:S.set.calendarId||'weddingfotopier@gmail.com',eventId:ev});msg+=' e tolto da Google Calendar'}
+      catch(e){msg+=' (su Google Calendar non rimosso: '+calErr(e)+')'}}
+    toast(msg);route2()})});
   m.querySelectorAll('[data-popc]').forEach(function(bt){bt.addEventListener('click',async function(){
     if(!bt.dataset.armed){bt.dataset.armed='1';bt.textContent='Sicuro? Clicca ancora';setTimeout(function(){if(document.body.contains(bt)){delete bt.dataset.armed;bt.textContent='Conferma matrimonio'}},4000);return}
     var w=byId(bt.dataset.popc);if(!w)return;delete w.attesa;persist(w);close();
