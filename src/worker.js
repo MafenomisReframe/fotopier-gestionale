@@ -68,6 +68,7 @@ async function calendar(env, tool, input) {
   if (input.description !== undefined) body.description = String(input.description).slice(0, 8000);
   if (input.location !== undefined) body.location = String(input.location).slice(0, 300);
   if (input.colorId) body.colorId = String(input.colorId);
+  if (Array.isArray(input.attachments)) body.attachments = input.attachments.filter(x => x && /^https:\/\/(drive|docs)\.google\.com\//.test(x.fileUrl || '')).slice(0, 5).map(x => ({ fileUrl: x.fileUrl, title: String(x.title || 'Contratto').slice(0, 150), mimeType: 'application/pdf' }));
   if (input.startTime && input.endTime) {
     if (input.allDay) { body.start = { date: input.startTime.slice(0, 10) }; body.end = { date: input.endTime.slice(0, 10) }; }
     else { body.start = { dateTime: input.startTime, timeZone: 'Europe/Rome' }; body.end = { dateTime: input.endTime, timeZone: 'Europe/Rome' }; }
@@ -76,7 +77,8 @@ async function calendar(env, tool, input) {
   const tok = await googleToken(env);
   const upd = tool === 'update_event';
   if (upd && !input.eventId) return json({ error: 'eventId mancante' }, 400);
-  const r = await fetch(upd ? base + '/' + encodeURIComponent(input.eventId) : base, { method: upd ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const qs = '?supportsAttachments=true';
+  const r = await fetch((upd ? base + '/' + encodeURIComponent(input.eventId) : base) + qs, { method: upd ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const ev = await r.json();
   if (!r.ok) return json({ error: (ev.error && ev.error.message) || 'Errore Google', code: r.status }, 502);
   return json({ payload: { id: ev.id, htmlLink: ev.htmlLink } });

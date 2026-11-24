@@ -300,6 +300,7 @@ function calInput(w){
   var luogo=[w.chiesa.nome&&'Cerimonia: '+w.chiesa.nome+(w.chiesa.citta?' ('+w.chiesa.citta+')':''),w.ristorante.nome&&'Ricevimento: '+w.ristorante.nome+(w.ristorante.citta?' ('+w.ristorante.citta+')':'')].filter(Boolean);
   var desc=[w.calNote?'Note dal calendario: '+w.calNote:'',w.attesa?'IN ATTESA DI CONFERMA':'',w.contrattoGenerato?'Contratto generato il '+dshort(w.contrattoGenerato):'',w.ora?'Cerimonia ore '+w.ora:'',luogo.join('\n'),'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||''),w.email?'Mail: '+w.email:'',(w.attesa?'':attivi(w).map(function(x){return svcLabel(x.k)+(x.desc?' – '+x.desc:'')}).join(', ')),'Scheda e contratto: '+location.origin+'/#matrimonio-'+w.id].filter(Boolean).join('\n');
   var inp={calendarId:S.set.calendarId||'weddingfotopier@gmail.com',summary:'MATRIMONIO '+nomiSposi(w),startTime:iso(d),endTime:iso(n),allDay:true,colorId:w.attesa?'10':'11',description:desc,notificationLevel:'NONE'};
+  if(w.contrattoLink){inp.attachments=[{fileUrl:w.contrattoLink,title:'Contratto '+nomiSposi(w)}];inp.description+='\nContratto: '+w.contrattoLink}
   if(luogo[0])inp.location=String(luogo[0]).replace(/^Cerimonia: /,'');
   return inp}
 async function calSync(w){
@@ -895,7 +896,7 @@ function viewW(w){
   out+='<div class="card sect"><h2>Google Calendar</h2><div class="cal"><b>MATRIMONIO</b><div class="hint" style="margin-top:4px">'+esc(dlong(w.data)||'data da inserire')+' · tutto il giorno · rosso pomodoro</div>'
    +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Chiesa '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span><button class="btn" id="attBtn">Rimetti in attesa di conferma</button>')+'</div>'
-   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+(w.calEventId?'Aggiorna evento in Google Calendar':'Crea evento in Google Calendar')+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il PDF va allegato a mano.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
+   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+(w.calEventId?'Aggiorna evento in Google Calendar':'Crea evento in Google Calendar')+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il contratto si allega da solo quando lo generi.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
   return out;
 }
 function bindW(w){
@@ -1115,7 +1116,7 @@ async function makePdf(w,mail){
     try{var bin='';for(var k=0;k<bytes.length;k+=32768)bin+=String.fromCharCode.apply(null,bytes.subarray(k,k+32768));
       var dr=await fetch('/api/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({anno:(w.data||'').slice(0,4)||w.anno,nome:nome,pdf:btoa(bin)})});
       var dj=await dr.json();
-      if(dr.ok){toast('Contratto salvato nel Drive in '+dj.cartella)}
+      if(dr.ok){if(dj.link){w.contrattoLink=dj.link;persist(w)}toast('Contratto salvato nel Drive in '+dj.cartella)}
       else if(dr.status!==500||!/non configurato/.test(dj.error||'')){toast('Salvataggio su Drive non riuscito: '+(dj.error||dr.status))}
     }catch(e){}
     if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((w.email||'').trim())&&!(w.contrattoInviato||'').endsWith(' a '+w.email.trim()))await mailContract(w,nome,bytes);
