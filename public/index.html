@@ -698,8 +698,8 @@ function viewW(w){
     return '<tr><td><select data-pp="'+i+'.tipo"><option value="acconto"'+(p.tipo!=='sconto'?' selected':'')+'>Caparra confirmatoria</option><option value="sconto"'+(p.tipo==='sconto'?' selected':'')+'>Sconto</option></select></td>'
      +'<td><input type="date" data-pp="'+i+'.data" value="'+esc(p.data||'')+'"></td>'
      +'<td><input inputmode="decimal" data-pp="'+i+'.importo" value="'+(p.importo?esc(String(p.importo).replace('.',',')):'')+'" style="min-width:90px"></td>'
-     +'<td><select data-pp="'+i+'.metodo"><option value=""></option>'+METODI.map(function(m){return '<option'+(p.metodo===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></td>'
-     +'<td><select data-pp="'+i+'.ricevuto"><option value=""></option>'+S.set.team.map(function(m){return '<option'+(p.ricevuto===m?' selected':'')+'>'+esc(m)+'</option>'}).join('')+'</select></td>'
+     +(p.tipo==='sconto'?'<td><span class="hint">—</span></td><td><span class="hint">—</span></td>':'<td><select data-pp="'+i+'.metodo"><option value=""></option>'+METODI.map(function(m){return '<option'+(p.metodo===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></td>'
+     +'<td><select data-pp="'+i+'.ricevuto"><option value=""></option>'+S.set.team.map(function(m){return '<option'+(p.ricevuto===m?' selected':'')+'>'+esc(m)+'</option>'}).join('')+'</select></td>')
      +'<td>'+(p.tipo==='sconto'?'<span class="hint">—</span>':'<label class="row" style="text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px;flex-wrap:nowrap;gap:6px"><input type="checkbox" style="width:auto" data-pp="'+i+'.fatturato" '+(p.fatturato?'checked':'')+'>Emessa</label>')+'</td>'
      +'<td><button class="btn sm del" data-delp="'+i+'" aria-label="Elimina riga">×</button></td></tr>';
   }).join('');
@@ -746,6 +746,7 @@ function bindW(w){
   m.querySelectorAll('[data-pp]').forEach(function(el){
     el.addEventListener('change',function(){var a=el.dataset.pp.split('.');var p=w.pagamenti[+a[0]],f=a[1];
       if(el.type==='checkbox')p[f]=el.checked;else if(f==='importo')p[f]=num(el.value);else p[f]=el.value;
+      if(f==='tipo'&&el.value==='sconto'){p.metodo='';p.ricevuto='';p.fatturato=false}
       changed(f==='importo'||f==='tipo')})});
   m.querySelectorAll('[data-delp]').forEach(function(b){b.addEventListener('click',function(){w.pagamenti.splice(+b.dataset.delp,1);changed(true)})});
   m.querySelectorAll('[data-ap]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.ap.split('.');var p=w.appuntamenti[+a[0]];p[a[1]]=el.type==='checkbox'?el.checked:el.value;changed(a[1]==='fatto'||a[1]==='data')})});
@@ -880,7 +881,7 @@ async function makePdf(w){
     var cols=[['Tipo',.27],['Data',.14],['Importo',.15],['Metodo di pagamento',.23],['Ricevuto da',.21]];
     var x=M;cols.forEach(function(c){box(x,y,CW*c[1],18,pale);T(x+6,y+6,c[0].toUpperCase(),{b:1,z:6,c:mut});x+=CW*c[1]});y+=18;
     var pr=w.pagamenti.slice(0,5);while(pr.length<3)pr.push(null);
-    pr.forEach(function(p){var vals=p?[p.tipo==='sconto'?'Sconto':'Caparra',dshort(p.data),num(p.importo)?eur(num(p.importo)):'',p.metodo||'',p.ricevuto||'']:['','','','',''];x=M;cols.forEach(function(c,i){box(x,y,CW*c[1],19);T(x+6,y+5.5,vals[i],{z:8.5});x+=CW*c[1]});y+=19});
+    pr.forEach(function(p){var vals=p?[p.tipo==='sconto'?'Sconto':'Caparra',dshort(p.data),num(p.importo)?eur(num(p.importo)):'',p.tipo==='sconto'?'':(p.metodo||''),p.tipo==='sconto'?'':(p.ricevuto||'')]:['','','','',''];x=M;cols.forEach(function(c,i){box(x,y,CW*c[1],19);T(x+6,y+5.5,vals[i],{z:8.5});x+=CW*c[1]});y+=19});
     y+=12;
     var bx=M+CW*.52,bw=CW*.48,tot=totale(w),ac=acconti(w),sc=sconti(w),sa=tot-ac-sc,sumTop=y;
     box(bx,y,bw,22,pale);T(bx+8,y+7,w.contanti?'TOTALE':'TOTALE + IVA',{b:1,z:9});T(bx+bw-8,y+6,eur(tot),{b:1,z:10,al:'r'});y+=22;
