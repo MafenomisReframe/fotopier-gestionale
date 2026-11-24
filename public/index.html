@@ -214,7 +214,7 @@ var SERVIZI=[
   {k:'share',label:'Share Love',desc:''},
   {k:'casa',label:'Casa sposo',desc:''}];
 var STATI=[['da_fare','Da fare'],['in_corso','In corso'],['finito','Finito'],['consegnato','Consegnato']];
-var TIPI_PRE=['Info','Contratto'],TIPI_POST=['Visione impaginato','Ritiro album','Consegna video','Ritiro'];
+var TIPI_PRE=['Futuro matrimonio','Contratto'],TIPI_POST=['Visione impaginato','Ritiro album','Consegna video','Ritiro'];
 var TIPI_APP=TIPI_PRE.concat(TIPI_POST);
 function isPost(t){return TIPI_POST.indexOf(t)>=0}
 function apCol(t){return isPost(t)?{b:'#722f37',bg:'#f1dde0',ink:'#fff',g:'3'}:t==='Contratto'?{b:'#e8730c',bg:'#ffd9b0',ink:'#fff',g:'6'}:{b:'#e0b100',bg:'#fff3b0',ink:'#3d2f00',g:'5'}}
