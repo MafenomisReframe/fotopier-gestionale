@@ -265,6 +265,7 @@ function nomiSposi(w){var a=(w.sposo.nome||'').trim(),b=(w.sposa.nome||'').trim(
 /* ---------- archivio (db condiviso, con ripiego in memoria) ---------- */
 var S={listino:[],weddings:[],set:Object.assign({},DEFAULT_SET),db:null,live:false,loaded:false,route:'dashboard',filter:'tutti',q:''};
 var saveTimers={};
+function resText(w){var v=w.resVia!=null?w.resVia:(w.residenza||'');var l2=[w.resCap,w.resCitta].filter(Boolean).join(' ')+(w.resProv?' ('+w.resProv+')':'');return [v,l2.trim()].filter(Boolean).join(' – ')}
 function lab(w){var n=w.numero||0;return (w.anno||'')+'-'+(n<10?'00':n<100?'0':'')+n}
 function yearOf(w){return /^\d{4}/.test(w.data||'')?+w.data.slice(0,4):(w.anno||new Date().getFullYear())}
 function renumber(except){
@@ -708,7 +709,7 @@ function viewW(w){
   out+='<div class="row" style="margin-top:14px;gap:10px;align-items:center"><button class="chip'+(w.contanti?' on':'')+'" id="cont">Contanti</button><span class="hint">'+(w.contanti?'Contanti: la dicitura + IVA è tolta dal totale.':'I prezzi sono + IVA. Attiva Contanti per togliere la dicitura + IVA dal totale.')+'</span></div>';
   out+='<div class="sum" style="margin-top:10px"><div><span>Totale'+(w.contanti?'':' + IVA')+'</span><span>'+eur(tot)+'</span></div><div><span>Caparra confirmatoria versata</span><span>– '+eur(a)+'</span></div>'+(sc>0?'<div><span>Sconto concesso</span><span>– '+eur(sc)+'</span></div>':'')+'<div><span>Saldo</span><span>'+eur(sa)+'</span></div></div></div>';
   // fatturazione + note
-  out+='<div class="card sect"><h2>Fatturazione e note</h2><div class="f">'+inp('residenza','Residenza fiscale degli sposi','s8','text',w.residenza)+inp('cf','Codice fiscale','s4','text',w.cf)
+  out+='<div class="card sect"><h2>Fatturazione e note</h2><div class="f">'+'<div class="s12 hint" style="margin-bottom:-6px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Residenza fiscale degli sposi</div>'+inp('resVia','Via','s12','text',w.resVia!=null?w.resVia:w.residenza)+inp('resCitta','Paese','s6','text',w.resCitta)+inp('resProv','Provincia','s3','text',w.resProv)+inp('resCap','CAP','s3','text',w.resCap)+inp('cf','Codice fiscale','s6','text',w.cf)
    +'<label class="s12">Note<textarea data-p="note">'+esc(w.note)+'</textarea></label></div></div>';
   // calendario
   out+='<div class="card sect"><h2>Google Calendar</h2><div class="cal"><b>MATRIMONIO</b><div class="hint" style="margin-top:4px">'+esc(dlong(w.data)||'data da inserire')+' · tutto il giorno · rosso pomodoro</div>'
@@ -890,7 +891,7 @@ async function makePdf(w){
     pg.drawRectangle({x:bx,y:H-y-24,width:bw,height:24,color:ink});T(bx+8,y+8,'SALDO',{b:1,z:10,c:white});T(bx+bw-8,y+6.5,eur(sa),{b:1,z:12,c:white,al:'r'});
     T(M,sumTop,'COORDINATE PER IL BONIFICO',{b:1,z:7,c:acc});T(M,sumTop+14,'IBAN '+s.iban,{b:1,z:8});T(M,sumTop+26,'Intestatario: '+s.intestatario,{z:8});T(M,sumTop+38,'Inviare copia del bonifico a '+s.mailBonifico,{z:7.5,c:mut});
     y+=24+14;
-    T(M,y,'Residenza fiscale degli sposi (per la fattura)',{b:1,z:7,c:mut});box(M,y+10,CW,18);T(M+6,y+15,w.residenza||'',{z:8.5});
+    T(M,y,'Residenza fiscale degli sposi (per la fattura)',{b:1,z:7,c:mut});box(M,y+10,CW,18);T(M+6,y+15,resText(w),{z:8.5});
     T(M,y+38,'Codice fiscale',{b:1,z:7,c:mut});box(M,y+48,CW,18);T(M+6,y+53,w.cf||'',{z:8.5});
     y+=72;box(M,y,CW,22);T(M+6,y+7,w.note?'Note: '+w.note:'Note:',{z:8.5});
     // RETRO
