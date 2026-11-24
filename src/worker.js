@@ -187,7 +187,7 @@ export default {
         const b = await req.json();
         return await calendar(env, b.tool, b.input || {});
       }
-      if (url.pathname === '/api/mail' && req.method === 'POST') return sendMail(env, await req.json());
+      if (url.pathname === '/api/mail' && req.method === 'POST') return await sendMail(env, await req.json());
       if (url.pathname === '/api/drive' && req.method === 'POST') {
         return await driveUpload(env, await req.json());
       }
