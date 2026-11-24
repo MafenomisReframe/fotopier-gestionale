@@ -796,6 +796,14 @@ async function bioEnable(){
   catch(e){toast('Impronta non attivata')}}
 async function bioLogin(){var id=bioId();if(!id)return false;
   try{await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(id)}],userVerification:'required',timeout:60000}});return true}catch(e){return false}}
+function bioOffer(){
+  var ok1=false;try{ok1=!!window.PublicKeyCredential&&!bioId()&&!localStorage.getItem('bioNo')}catch(e){}
+  if(!ok1||document.getElementById('bioBar'))return;
+  var b=document.createElement('div');b.id='bioBar';b.style.cssText='position:fixed;left:12px;right:12px;bottom:14px;z-index:900;background:var(--card,#1e1e1e);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;gap:8px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35)';
+  b.innerHTML='<span style="flex:1;font-size:13px">Vuoi entrare con l\u2019impronta digitale su questo telefono?</span><button class="btn pri" id="bioYes">Attiva</button><button class="btn" id="bioNo">Non ora</button>';
+  document.body.appendChild(b);
+  document.getElementById('bioYes').addEventListener('click',async function(){b.remove();await bioEnable()});
+  document.getElementById('bioNo').addEventListener('click',function(){try{localStorage.setItem('bioNo','1')}catch(e){}b.remove()})}
 /* ---------- password di accesso ---------- */
 function appOk(){try{return sessionStorage.getItem('appOk')==='1'}catch(e){return false}}
 function lockRender(){var L=document.getElementById('appLock');if(!L)return;
@@ -807,12 +815,12 @@ function lockRender(){var L=document.getElementById('appLock');if(!L)return;
    +'<button class="btn pri" id="lkGo" style="margin-top:12px;width:100%">'+(nuova?'Salva e entra':'Entra')+'</button>'
    +(!nuova&&S.setLoaded&&bioId()?'<button class="btn" id="lkBio" style="margin-top:8px;width:100%">\ud83d\udc46 Entra con impronta</button>':'')+'</div>';
   var go=document.getElementById('lkGo'),p1=document.getElementById('lkP1'),p2=document.getElementById('lkP2');
-  function ok(){try{sessionStorage.setItem('appOk','1')}catch(e){}lockRender()}
+  function ok(viaBio){try{sessionStorage.setItem('appOk','1')}catch(e){}lockRender();if(!viaBio)bioOffer()}
   function run(){var p=p1.value;if(!S.setLoaded){toast('Un attimo, sto caricando');return}if(!p){toast('Scrivi la password');return}
     if(!S.set.appHash){if(p.length<4){toast('Almeno 4 caratteri');return}if(p!==p2.value){toast('Le due password non coincidono');return}
       sha(p).then(function(h){S.set.appHash=h;persistSet();ok()})}
     else sha(p).then(function(h){if(h===S.set.appHash)ok();else{toast('Password sbagliata');p1.value=''}})}
-  var bb=document.getElementById('lkBio');if(bb){var tryBio=function(){bioLogin().then(function(o){if(o)ok()})};bb.addEventListener('click',tryBio);if(!S._bioAuto){S._bioAuto=1;tryBio()}}
+  var bb=document.getElementById('lkBio');if(bb){var tryBio=function(){bioLogin().then(function(o){if(o)ok(true)})};bb.addEventListener('click',tryBio);if(!S._bioAuto){S._bioAuto=1;tryBio()}}
   go.addEventListener('click',run);[p1,p2].forEach(function(e){if(e)e.addEventListener('keydown',function(k){if(k.key==='Enter')run()})});if(document.activeElement!==p1)p1.focus()}
 function lockInit(){if(appOk())return;var L=document.createElement('div');L.id='appLock';L.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center';document.body.appendChild(L);lockRender()}
 function appChange(){var p=prompt('Nuova password di accesso al gestionale (almeno 4 caratteri):');if(!p)return;if(p.length<4){toast('Almeno 4 caratteri');return}sha(p).then(function(h){S.set.appHash=h;persistSet();toast('Password di accesso cambiata')})}
