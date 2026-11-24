@@ -278,10 +278,10 @@ function apConfl(d,o){
 function calInput(w){
   var d=parseD(w.data),n=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
   var iso=function(x){return x.getFullYear()+'-'+two(x.getMonth()+1)+'-'+two(x.getDate())+'T00:00:00'};
-  var luogo=[w.chiesa.nome&&'Chiesa '+w.chiesa.nome+(w.chiesa.citta?' ('+w.chiesa.citta+')':''),w.ristorante.nome&&'Ricevimento '+w.ristorante.nome+(w.ristorante.citta?' ('+w.ristorante.citta+')':'')].filter(Boolean);
-  var desc=[w.attesa?'IN ATTESA DI CONFERMA':'',w.contrattoGenerato?'Contratto generato il '+dshort(w.contrattoGenerato):'',w.ora?'Cerimonia ore '+w.ora:'',luogo.join('\n'),'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||''),w.email?'Mail: '+w.email:'',attivi(w).map(function(x){return svcLabel(x.k)+(x.desc?' – '+x.desc:'')}).join(', '),'Scheda e contratto: '+location.origin+'/#matrimonio-'+w.id].filter(Boolean).join('\n');
+  var luogo=[w.chiesa.nome&&'Cerimonia: '+w.chiesa.nome+(w.chiesa.citta?' ('+w.chiesa.citta+')':''),w.ristorante.nome&&'Ricevimento: '+w.ristorante.nome+(w.ristorante.citta?' ('+w.ristorante.citta+')':'')].filter(Boolean);
+  var desc=[w.attesa?'IN ATTESA DI CONFERMA':'',w.contrattoGenerato?'Contratto generato il '+dshort(w.contrattoGenerato):'',w.ora?'Cerimonia ore '+w.ora:'',luogo.join('\n'),'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||''),w.email?'Mail: '+w.email:'',(w.attesa?'':attivi(w).map(function(x){return svcLabel(x.k)+(x.desc?' – '+x.desc:'')}).join(', ')),'Scheda e contratto: '+location.origin+'/#matrimonio-'+w.id].filter(Boolean).join('\n');
   var inp={calendarId:S.set.calendarId||'weddingfotopier@gmail.com',summary:'MATRIMONIO '+nomiSposi(w),startTime:iso(d),endTime:iso(n),allDay:true,colorId:w.attesa?'10':'11',description:desc,notificationLevel:'NONE'};
-  if(luogo[0])inp.location=String(luogo[0]).replace(/^Chiesa /,'');
+  if(luogo[0])inp.location=String(luogo[0]).replace(/^Cerimonia: /,'');
   return inp}
 async function calSync(w){
   if(!w.data)throw {code:'nodata'};
@@ -384,7 +384,12 @@ function viewDash(){
   var prox=prossimi[0],dd=prox?daysTo(prox.data):null;
   var al=[];all.forEach(function(w){al=al.concat(attenzioni(w))});
   var ord={bad:0,warn:1,info:2};al.sort(function(a,b){return ord[a.l]-ord[b.l]});
-  var out='<div class="top"><div><h1>Dashboard</h1><p class="sub">Anno '+anno+'</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop">Nuovo matrimonio</a></div>';
+  var out='<div class="top"><div><h1>Dashboard</h1><p class="sub">Anno '+anno+'</p></div><div class="row" style="gap:8px;align-items:center"><details class="nl" id="qkNl"><summary class="btn pri" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">+ Matrimonio in attesa</summary><div class="card nlp"><b>Matrimonio in attesa di conferma</b><div class="f" style="margin-top:10px">'
+   +'<label class="s6">Sposo<input id="qSpo" placeholder="Nome e cognome"></label><label class="s6">Sposa<input id="qSpa" placeholder="Nome e cognome"></label>'
+   +'<label class="s6">Data matrimonio<input type="date" id="qData"></label><label class="s6">Telefono<input id="qTel" type="tel"></label>'
+   +'<label class="s6">Cerimonia (luogo)<input id="qChi" placeholder="Es. San Pietro, Brescia"></label><label class="s6">Ora cerimonia<input id="qOra" type="time"></label>'
+   +'<label class="s12">Location ricevimento<input id="qLoc" placeholder="Ristorante o villa"></label></div>'
+   +'<div class="row" style="gap:10px;align-items:center;margin-top:12px"><button class="btn pri" id="qS" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Invia e metti in calendario</button><span class="hint" id="qM"></span></div></div></details><a class="btn pri" href="#matrimonio-nuovo" id="newTop">Nuovo matrimonio</a></div></div>';
   if(!S.db)out+='<div class="banner">Questa copia non salva i dati: aprila dal tuo account per salvarli online.</div>';
   var att=all.filter(function(w){return w.attesa});
   if(att.length)out+='<div class="card" style="border-color:#2e9d5b"><div class="row" style="gap:10px;align-items:center;margin-bottom:10px"><span class="pill" style="background:#2e9d5b;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">MATRIMONIO</span><h2 style="margin:0">In attesa di conferma · '+att.length+'</h2></div>'+att.map(function(w){return '<div class="row" style="gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap"><a href="#matrimonio-'+esc(w.id)+'" style="text-decoration:none;color:inherit;min-width:180px"><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc([w.sposo.tel,w.email].filter(Boolean).join(' · ')||'nessun recapito')+'</div></a><div class="row" style="gap:8px;align-items:center"><label class="hint" style="margin:0">Data matrimonio<input type="date" data-pd="'+esc(w.id)+'" value="'+esc(w.data||'')+'" style="margin-left:6px"></label><button class="btn pri" data-pc="'+esc(w.id)+'">Conferma</button></div></div>'}).join('')+'<p class="hint" style="margin:8px 0 0">Appena inserisci la data il matrimonio va su Google Calendar in verde. Con Conferma diventa rosso.</p></div>';
@@ -423,6 +428,24 @@ function bindDash(){
     var m='Matrimonio confermato';
     if(w.data){try{await calSync(w);persist(w);m+=' e calendario aggiornato (rosso)'}catch(e){m+=' (calendario non aggiornato: '+calErr(e)+')'}}
     toast(m);route2()})});
+  var qk=$('#qkNl');
+  if(qk){qk.addEventListener('click',function(e){if(e.target===qk)qk.open=false});
+    var qOk=false;
+    $('#qData').addEventListener('change',function(){qOk=false;$('#qS').textContent='Invia e metti in calendario';var c=apConfl(this.value,'').filter(function(x){return /^Matrimonio/.test(x)});$('#qM').textContent=c.length?'Attenzione: '+c.join(' · '):'';$('#qM').style.color=c.length?'#b45309':''});
+    $('#qS').addEventListener('click',async function(){
+      var q=function(i){return $(i).value.trim()},msg=$('#qM');
+      if(!q('#qSpo')&&!q('#qSpa')){msg.textContent='Scrivi almeno il nome di uno dei due';return}
+      if(!q('#qData')){msg.textContent='Inserisci la data del matrimonio';return}
+      var cf=apConfl(q('#qData'),'').filter(function(x){return /^Matrimonio/.test(x)});
+      if(cf.length&&!qOk){msg.style.color='#b45309';msg.textContent='Attenzione: '+cf.join(' · ');qOk=true;this.textContent='Invia comunque';return}
+      this.disabled=true;
+      var w=emptyWedding(new Date().getFullYear(),0);w.id=w.anno+'-'+Date.now().toString(36);
+      w.attesa=true;w.sposo.nome=q('#qSpo');w.sposa.nome=q('#qSpa');w.sposo.tel=q('#qTel');w.data=q('#qData');w.ora=q('#qOra');
+      w.chiesa.nome=q('#qChi');w.ristorante.nome=q('#qLoc');
+      S.weddings.push(w);persist(w);
+      var m='Matrimonio in attesa creato';
+      try{await calSync(w);persist(w);m+=' e messo in Google Calendar (verde)'}catch(e){m+=' (calendario non riuscito: '+calErr(e)+')'}
+      toast(m);route2()})}
   var apn=$('#apNl');
   if(apn){apn.addEventListener('click',function(e){if(e.target===apn)apn.open=false});
     document.addEventListener('keydown',function esc3(e){if(!document.body.contains(apn)){document.removeEventListener('keydown',esc3);return}if(e.key==='Escape')apn.open=false});
