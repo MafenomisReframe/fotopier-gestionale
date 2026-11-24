@@ -726,7 +726,9 @@ function bindW(w){
   m.querySelectorAll('[data-sp]').forEach(function(el){
     el.addEventListener('change',function(){
       var a=el.dataset.sp.split('.');var s=w.servizi[+a[0]];var f=a[1];
-      if(el.type==='checkbox'){s[f]=el.checked;changed(true);return}
+      if(el.type==='checkbox'){s[f]=el.checked;
+        if(el.checked&&(s.k==='foto'||s.k==='fotolibro')){var o=s.k==='foto'?'fotolibro':'foto';w.servizi.forEach(function(x){if(x.k===o&&x.attivo){x.attivo=false;toast(svcLabel(s.k)+' e '+svcLabel(o)+' non si possono scegliere insieme: tolto '+svcLabel(o))}})}
+        changed(true);return}
       if(f==='prezzo'){s[f]=num(el.value);changed(true);return}
       if(f==='stato'){
         if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=s.stato;return}
