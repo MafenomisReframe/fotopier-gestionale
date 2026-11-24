@@ -165,7 +165,7 @@ textarea{resize:vertical;min-height:64px}
 @media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}}
 tr.rc td{border-top:2px solid var(--b);border-bottom:2px solid var(--b)}tr.rc td:first-child{border-left:2px solid var(--b);border-radius:8px 0 0 8px}tr.rc td:last-child{border-right:2px solid var(--b);border-radius:0 8px 8px 0}
 tr.rok{--b:#2e9d5b}tr.rok td{background:rgba(46,157,91,.22)}
-tr.rno{--b:#e0b100}tr.rno td{background:rgba(224,177,0,.13)}
+tr.rrd{--b:#d93025}tr.rrd td{background:rgba(217,48,37,.2)}tr.rno{--b:#e0b100}tr.rno td{background:rgba(224,177,0,.13)}
 .cd.day{min-height:104px;gap:4px;padding:6px}
 .cd.day .ev{display:block;border-radius:5px;padding:3px 6px;font-size:11.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;color:#fff;background:#d93025}
 .cd.day .ev.att{background:#2e9d5b}
@@ -800,18 +800,21 @@ function itemW(w,right,html){
 function viewList(){
   var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Tutti i matrimoni, per data</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop" style="background:#d93025;border-color:#d93025;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.06em">CREA CONTRATTO</a></div>';
   out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, chiesa, ristorante" value="'+esc(S.q)+'">'
-   +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['finito','Finiti'],['consegnato','Consegnati'],['saldo','Con saldo']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
+   +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['con','Con contratto'],['senza','Senza contratto'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['consegnato','Consegnati']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
   var q=S.q.toLowerCase();
   var rows=conf().filter(function(w){
     var st=statoW(w).k;
-    if(S.filter==='saldo'){if(!(saldo(w)>0.005&&attivi(w).length))return false}
+    var hc=totale(w)>0||w.contrattoGenerato;
+    if(S.filter==='con'){if(!hc)return false}
+    else if(S.filter==='senza'){if(hc)return false}
+    else if(S.filter==='consegnato'){if(st!=='consegnato'&&st!=='finito')return false}
     else if(S.filter!=='tutti'&&st!==S.filter)return false;
     if(q){var hay=(nomiSposi(w)+' '+w.chiesa.nome+' '+w.ristorante.nome+' '+lab(w)).toLowerCase();if(hay.indexOf(q)<0)return false}
     return true});
   if(!rows.length)return out+'<div class="card empty">Nessun matrimonio trovato.</div>';
   out+='<div class="card scroll"><table><thead><tr><th>N.</th><th>Data</th><th>Sposi</th><th>Servizi</th><th class="r">Totale</th><th class="r">Saldo</th><th>Stato</th></tr></thead><tbody>'
    +rows.map(function(w){var st=statoW(w),s=saldo(w);
-     return '<tr class="click rc '+(totale(w)>0||w.contrattoGenerato?'rok':'rno')+'" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
+     return '<tr class="click rc '+(st.k==='consegnato'||st.k==='finito'?'rrd':(totale(w)>0||w.contrattoGenerato?'rok':'rno'))+'" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
    +'</tbody></table></div>';
   return out;
 }
