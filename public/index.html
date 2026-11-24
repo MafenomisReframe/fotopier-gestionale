@@ -363,6 +363,12 @@ function byId(id){if(S.bozza&&S.bozza.id===id)return S.bozza;for(var i=0;i<S.wed
 function conf(){return S.weddings.filter(function(w){return !w.attesa})}
 function sortW(){S.weddings.sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')})}
 
+/* ---------- anno 2026 / 2027 ---------- */
+function yrList(){var y={};conf().forEach(function(w){y[yearOf(w)]=1});return Object.keys(y).sort()}
+function yrSel(){var ys=yrList();if(!ys.length)return String(new Date().getFullYear());if(S.yr!=='tutti'&&ys.indexOf(String(S.yr))<0)S.yr=ys.indexOf(String(new Date().getFullYear()))>=0?String(new Date().getFullYear()):ys[ys.length-1];return String(S.yr)}
+function inYr(w){var y=yrSel();return y==='tutti'||String(yearOf(w))===y}
+function yrBar(){var y=yrSel();return '<div class="tabs" id="yrBar" style="margin-bottom:14px">'+yrList().concat(['tutti']).map(function(a){return '<button class="chip'+(y===a?' on':'')+'" data-yr="'+a+'">'+(a==='tutti'?'Tutti gli anni':a)+'</button>'}).join('')+'</div>'}
+function bindYr(){document.querySelectorAll('#yrBar .chip').forEach(function(b){b.addEventListener('click',function(){S.yr=b.dataset.yr;route2()})})}
 /* ---------- navigazione ---------- */
 function nav(){
   var n=$('#nav');var r=S.route;
@@ -620,8 +626,8 @@ function lavCard(w){
   return '<a class="lw" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
 }
 function viewLav(){
-  var all=conf().filter(function(w){return !w.lavEsc&&((w.data&&daysTo(w.data)<0)||w.lavorazione)&&lavori(w).length});
-  var cand=conf().filter(function(w){return lavori(w).length&&(w.lavEsc||(!w.lavorazione&&!(w.data&&daysTo(w.data)<0)))}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
+  var all=conf().filter(function(w){return inYr(w)&&!w.lavEsc&&((w.data&&daysTo(w.data)<0)||w.lavorazione)&&lavori(w).length});
+  var cand=conf().filter(function(w){return inYr(w)&&lavori(w).length&&(w.lavEsc||(!w.lavorazione&&!(w.data&&daysTo(w.data)<0)))}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
   var inl=all.filter(function(w){var k=statoW(w).k;return k==='lavoro'});
   var fin=all.filter(function(w){return statoW(w).k==='finito'});
   var con=all.filter(function(w){return statoW(w).k==='consegnato'});
@@ -633,6 +639,7 @@ function viewLav(){
     names.forEach(function(n){(per[n]=per[n]||[]).push({w:w,x:x})})})});
   var names=Object.keys(per).sort(function(a,b){if(a==='Da assegnare')return 1;if(b==='Da assegnare')return -1;return per[b].length-per[a].length});
   var out='<div class="top"><div><h1>Lavorazione</h1><p class="sub">Matrimoni celebrati, a che punto sono e chi ci lavora</p></div><details class="nl"><summary class="btn pri">+ Nuova lavorazione</summary><div class="card nlp"><b>Scegli il matrimonio</b><input class="nls" type="search" placeholder="Cerca per nome o data">'+(cand.length?cand.map(function(w){return '<button class="nlr" data-startlav="'+esc(w.id)+'"><span>'+esc(nomiSposi(w))+'</span><span class="hint">'+esc(w.data?dlong(w.data):'senza data')+'</span></button>'}).join(''):'<div class="empty">Nessun matrimonio da avviare.</div>')+'</div></details></div>';
+  out+=yrBar();
   out+='<div class="grid kpis">'+kpi('In lavorazione',String(inl.length),'matrimoni da completare')+kpi('Finiti',String(fin.length),'da consegnare')+kpi('Consegnati',String(con.length),'chiusi')+kpi('Matrimoni celebrati',String(all.length),'in totale')+'</div>';
   out+='<div class="card sect"><h2>Chi sta lavorando a cosa</h2>'+(names.length?'<div class="grid two" style="gap:12px">'+names.map(function(n){
     return '<div class="who"><div class="row" style="justify-content:space-between"><b>'+esc(n)+'</b><span class="pill '+(n==='Da assegnare'?'warn':'info')+'">'+per[n].length+(per[n].length===1?' lavoro aperto':' lavori aperti')+'</span></div>'
@@ -827,6 +834,7 @@ function viewAdm(){
 }
 function nonFatture(list){var n=0;list.forEach(function(w){(w.pagamenti||[]).forEach(function(p){if(p.tipo!=='sconto'&&num(p.importo)>0&&!p.fatturato)n++})});return n}
 function bindAdm(){
+  bindYr();
   var nl=document.querySelector('.nl');
   if(nl){nl.addEventListener('click',function(e){if(e.target===nl)nl.open=false});
     document.addEventListener('keydown',function esc2(e){if(!document.body.contains(nl)){document.removeEventListener('keydown',esc2);return}if(e.key==='Escape')nl.open=false});
@@ -848,8 +856,10 @@ function viewList(){
   var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Tutti i matrimoni, per data</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop" style="background:#d93025;border-color:#d93025;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.06em">CREA CONTRATTO</a></div>';
   out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, celebrazione, ristorante" value="'+esc(S.q)+'">'
    +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['con','Con contratto'],['senza','Senza contratto'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['consegnato','Consegnati']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
+  out=out.replace('<div class="row" style="margin-bottom:14px"><input class="search"',yrBar()+'<div class="row" style="margin-bottom:14px"><input class="search"');
   var q=S.q.toLowerCase();
   var rows=conf().filter(function(w){
+    if(!inYr(w))return false;
     var st=statoW(w).k;
     var hc=totale(w)>0||w.contrattoGenerato;
     if(S.filter==='con'){if(!hc)return false}
@@ -866,6 +876,7 @@ function viewList(){
   return out;
 }
 function bindList(){
+  bindYr();
   var q=$('#q');if(q)q.addEventListener('input',function(){S.q=q.value;var pos=q.selectionStart;var m=$('#main');m.innerHTML=viewList();bindList();var n=$('#q');n.focus();n.setSelectionRange(pos,pos)});
   document.querySelectorAll('#flt .chip').forEach(function(b){b.addEventListener('click',function(){S.filter=b.dataset.f;route2()})});
   document.querySelectorAll('tr.click').forEach(function(r){r.addEventListener('click',function(){location.hash='matrimonio-'+r.dataset.id})});
@@ -1089,6 +1100,7 @@ function viewSet(){
   return '<div class="top"><div><h1>Impostazioni</h1><p class="sub">Dati che compaiono nel contratto</p></div></div>'
    +'<div class="card sect"><h2>Titolare e recapiti</h2><div class="f">'
    +setf('titolare','Titolare','s6')+setf('piva','Partita IVA','s6')+setf('indirizzo','Indirizzo','s12')+setf('tel','Telefoni','s6')+setf('web','Sito e mail','s6')+setf('calendarId','Calendario Google per i matrimoni','s12')+'</div></div>'
+   +'<div class="card sect"><h2>Importa matrimoni 2026</h2><p class="hint" style="margin:0 0 10px">Aggiunge i 50 matrimoni 2026 dei tuoi fogli (servizi, importi, acconti, stato lavori). Non tocca calendario né i matrimoni già presenti. Si può premere una volta sola senza doppioni.</p><button class="btn pri" id="imp26">Importa matrimoni 2026</button></div>'
    +'<div class="card sect"><h2>Pagamenti</h2><div class="f">'+setf('iban','IBAN','s8')+setf('intestatario','Intestatario','s4')+setf('mailBonifico','Mail per la copia del bonifico','s6')+'</div></div>'
    +'<div class="card sect"><h2>Team</h2><div class="team" id="teamList">'+s.team.map(function(t,i){return '<span class="chip on">'+esc(t)+' <button data-rm="'+i+'" style="background:none;border:0;cursor:pointer;color:inherit" aria-label="Rimuovi '+esc(t)+'">×</button></span>'}).join('')+'</div>'
    +'<div class="row" style="margin-top:12px"><input id="newMember" placeholder="Nuovo fotografo o videomaker" style="max-width:260px"><button class="btn" id="addMember">Aggiungi</button></div></div>'
@@ -1096,6 +1108,13 @@ function viewSet(){
 }
 function setf(k,l,c){return '<label class="'+c+'">'+esc(l)+'<input data-set="'+k+'" value="'+esc(S.set[k])+'"></label>'}
 function bindSet(){
+  var ib=$('#imp26');if(ib)ib.addEventListener('click',async function(){
+    if(!confirm('Importare i matrimoni 2026 nel gestionale?'))return;
+    try{var r=await fetch('import2026.json',{cache:'no-store'});var L=await r.json();var n=0;
+      L.forEach(function(w){if(byId(w.id))return;w.creato=w.creato||Date.now();S.weddings.push(w);n++});
+      if(S.db)for(var i=0;i<L.length;i++){var w=byId(L[i].id);if(w)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)))}
+      sortW();renumber();toast(n?('Importati '+n+' matrimoni 2026'):'Già importati');ib.textContent=n?'Importati ✓':'Già importati'}
+    catch(e){toast('Importazione non riuscita')}});
   document.querySelectorAll('[data-set]').forEach(function(el){el.addEventListener('change',function(){S.set[el.dataset.set]=el.value;persistSet();toast('Salvato')})});
   document.querySelectorAll('[data-rm]').forEach(function(b){b.addEventListener('click',function(){S.set.team.splice(+b.dataset.rm,1);persistSet();$('#main').innerHTML=viewSet();bindSet()})});
   $('#addMember').addEventListener('click',function(){var v=$('#newMember').value.trim();if(!v)return;if(S.set.team.indexOf(v)<0)S.set.team.push(v);persistSet();$('#main').innerHTML=viewSet();bindSet()});
