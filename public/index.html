@@ -367,11 +367,38 @@ function calendario(){
   for(var d=1;d<=dim;d++){
     var ds=y+'-'+two(m+1)+'-'+two(d),ws=by[d]||[],isT=ds===tod;
     if(ws.length){var w=ws[0];var sur=(w.sposo.nome||w.sposa.nome||'Matrimonio').split(' ')[0];
-      cells+='<a class="cd w'+(ws.some(function(x){return x.attesa})?' att':'')+(isT?' t':'')+'" href="#matrimonio-'+esc(w.id)+'" title="'+esc(ws.map(nomiSposi).join(' / '))+'"><b>'+d+'</b><span>'+esc(sur)+(ws.length>1?' +'+(ws.length-1):'')+'</span></a>'}
-    else if(apBy[d]){var ap=apBy[d][0];cells+='<a class="cd ap'+(isPost(ap.a.tipo)?' post':'')+(isT?' t':'')+'" href="#matrimonio-'+esc(ap.w.id)+'" title="'+esc(apBy[d].map(function(x){return x.a.tipo+' · '+nomiSposi(x.w)}).join(' / '))+'"><b>'+d+'</b><span>'+esc(ap.a.tipo.split(' ')[0])+(ap.a.ora?' '+esc(ap.a.ora):'')+'</span></a>'}
+      var anyAtt=ws.some(function(x){return x.attesa});cells+='<a class="cd w'+(anyAtt?' att':'')+(isT?' t':'')+'" '+(anyAtt?'data-day="'+ds+'" href="#"':'href="#matrimonio-'+esc(w.id)+'"')+' title="'+esc(ws.map(nomiSposi).join(' / '))+'"><b>'+d+'</b><span>'+esc(sur)+(ws.length>1?' +'+(ws.length-1):'')+'</span></a>'}
+    else if(apBy[d]){var ap=apBy[d][0];cells+='<a class="cd ap'+(isPost(ap.a.tipo)?' post':'')+(isT?' t':'')+'" data-day="'+ds+'" href="#" title="'+esc(apBy[d].map(function(x){return x.a.tipo+' · '+nomiSposi(x.w)}).join(' / '))+'"><b>'+d+'</b><span>'+esc(ap.a.tipo.split(' ')[0])+(ap.a.ora?' '+esc(ap.a.ora):'')+'</span></a>'}
     else cells+='<div class="cd'+(isT?' t':'')+'"><b>'+d+'</b></div>';
   }
   return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Calendario</h2><div class="row" style="gap:6px"><button class="btn sm" id="calP" aria-label="Mese precedente">‹</button><b style="min-width:130px;text-align:center;text-transform:capitalize">'+MESI[m]+' '+y+'</b><button class="btn sm" id="calN" aria-label="Mese successivo">›</button></div></div><div class="cal-grid">'+cells+'</div><div class="legend"><span style="--x:1" class="mc">Matrimonio confermato</span><span class="mv">In attesa</span><span class="ap">Appuntamento</span><span class="po">Post</span></div></div>';
+}
+function dayPop(ds){
+  var old=document.getElementById('dayPop');if(old)old.remove();
+  var h='',row=function(k,v){return v?'<div style="display:grid;grid-template-columns:96px 1fr;gap:8px;padding:3px 0"><span class="hint" style="margin:0">'+k+'</span><span>'+v+'</span></div>':''};
+  S.weddings.forEach(function(w){
+    if(w.data===ds){
+      h+='<div class="card" style="border-color:'+(w.attesa?'#2e9d5b':'#d93025')+';margin-bottom:10px"><div class="row" style="gap:8px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+(w.attesa?'#2e9d5b':'#d93025')+';color:#fff;border-color:transparent;font-weight:800">MATRIMONIO'+(w.attesa?' · IN ATTESA':'')+'</span></div><b>'+esc(nomiSposi(w))+'</b>'
+       +row('Telefono',esc([w.sposo.tel,w.sposa&&w.sposa.tel].filter(Boolean).join(' · ')))+row('Email',esc(w.email||''))
+       +row('Cerimonia',esc([w.chiesa&&w.chiesa.nome,w.ora].filter(Boolean).join(' · ')))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))
+       +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a></div></div>';
+    }
+    (w.appuntamenti||[]).forEach(function(a){
+      if(a.data!==ds||a.fatto)return;var po=isPost(a.tipo),col=po?'#722f37':'#e0b100';
+      h+='<div class="card" style="border-color:'+col+';margin-bottom:10px"><div class="row" style="gap:8px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+col+';color:'+(po?'#fff':'#3d2f00')+';border-color:transparent;font-weight:800">'+esc(a.tipo.toUpperCase())+'</span><b>'+(a.ora?esc(a.ora):'tutto il giorno')+'</b></div><b>'+esc(nomiSposi(w))+'</b>'
+       +row('Telefono',esc([w.sposo.tel,w.sposa&&w.sposa.tel].filter(Boolean).join(' · ')))+row('Email',esc(w.email||''))
+       +row('Data matrimonio',w.data?esc(dlong(w.data)):'')+row('Cerimonia',esc((w.chiesa&&w.chiesa.nome)||''))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))+row('Note',esc(a.note||''))
+       +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a>'+(a.calEventLink?' <a class="btn sm" target="_blank" rel="noopener" href="'+esc(a.calEventLink)+'">Apri su Google Calendar</a>':'')+'</div></div>';
+    });
+  });
+  if(!h)return;
+  var m=document.createElement('div');m.id='dayPop';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML='<div class="card" style="width:min(520px,100%);max-height:80vh;overflow:auto;box-shadow:0 16px 48px rgba(0,0,0,.35)"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0">'+esc(dlong(ds))+'</h2><button class="btn sm" id="dayX">Chiudi</button></div>'+h+'</div>';
+  document.body.appendChild(m);
+  var close=function(){m.remove();document.removeEventListener('keydown',kd)};
+  var kd=function(e){if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
+  m.addEventListener('click',function(e){if(e.target===m)close()});document.getElementById('dayX').addEventListener('click',close);
+  m.querySelectorAll('a[href^="#matrimonio"]').forEach(function(a){a.addEventListener('click',close)});
 }
 function viewDash(){
   var anno=new Date().getFullYear();
@@ -445,6 +472,7 @@ function bindDash(){
       var m='Matrimonio in attesa creato';
       try{await calSync(w);persist(w);m+=' e messo in Google Calendar (verde)'}catch(e){m+=' (calendario non riuscito: '+calErr(e)+')'}
       toast(m);route2()})}
+  document.querySelectorAll('[data-day]').forEach(function(c){c.addEventListener('click',function(e){e.preventDefault();dayPop(c.dataset.day)})});
   function bindAp(P){
     var g=function(x){return $('#'+P+x)};
     if(!g('S'))return;
