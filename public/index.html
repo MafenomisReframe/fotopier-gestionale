@@ -964,13 +964,14 @@ function itemW(w,right,html){
 
 /* ---------- elenco ---------- */
 function viewList(){
-  var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Tutti i matrimoni, per data</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop" style="background:#d93025;border-color:#d93025;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.06em">CREA CONTRATTO</a></div>';
+  var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Matrimoni da saldare, per data · i saldati sono solo in Amministrazione</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop" style="background:#d93025;border-color:#d93025;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.06em">CREA CONTRATTO</a></div>';
   out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, celebrazione, ristorante" value="'+esc(S.q)+'">'
    +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['con','Con contratto'],['senza','Senza contratto'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['consegnato','Consegnati']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
   out=out.replace('<div class="row" style="margin-bottom:14px"><input class="search"',yrBar()+'<div class="row" style="margin-bottom:14px"><input class="search"');
   var q=S.q.toLowerCase();
   var rows=conf().filter(function(w){
     if(!inYr(w))return false;
+    if(totale(w)>0&&saldo(w)<=0.005)return false;
     var st=statoW(w).k;
     var hc=totale(w)>0||w.contrattoGenerato;
     if(S.filter==='con'){if(!hc)return false}
