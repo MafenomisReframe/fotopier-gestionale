@@ -355,10 +355,12 @@ function persist(w){
   renumber(w);sortW();
   if(!S.db){return}
   clearTimeout(saveTimers[w.id]);
+  S._dirty=S._dirty||{};S._dirty[w.id]=1;
   saveTimers[w.id]=setTimeout(function(){
-    S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w))).catch(function(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))});
+    S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w))).then(function(){delete S._dirty[w.id]}).catch(function(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))});
   },500);
 }
+window.addEventListener('beforeunload',function(e){if(S.bozza||Object.keys(S._dirty||{}).length){e.preventDefault();e.returnValue='';return ''}});
 function persistSet(){if(S.db){S.db.doc('impostazioni/studio').set(JSON.parse(JSON.stringify(S.set))).catch(function(){toast('Impostazioni non salvate')})}}
 function byId(id){if(S.bozza&&S.bozza.id===id)return S.bozza;for(var i=0;i<S.weddings.length;i++)if(S.weddings[i].id===id)return S.weddings[i];return null}
 function conf(){return S.weddings.filter(function(w){return !w.attesa})}
