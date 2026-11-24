@@ -1,0 +1,116 @@
+/* Gestionale Foto Pier: API per dati (D1) e Google Calendar.
+   Le pagine sono servite da Cloudflare (public/); tutto /api/* passa da qui. */
+
+const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+const b64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')), c => c.charCodeAt(0));
+const PATH_OK = /^(matrimoni\/[A-Za-z0-9_-]{1,40}|impostazioni\/[A-Za-z0-9_-]{1,40})$/;
+
+/* ---- accesso: Cloudflare Access firma ogni richiesta con un JWT ---- */
+let jwks = null, jwksAt = 0;
+async function accessEmail(req, env) {
+  const tok = req.headers.get('Cf-Access-Jwt-Assertion');
+  if (!tok || !env.ACCESS_TEAM || !env.ACCESS_AUD) return null;
+  const [h, p, s] = tok.split('.');
+  if (!h || !p || !s) return null;
+  const head = JSON.parse(new TextDecoder().decode(b64u(h)));
+  const pay = JSON.parse(new TextDecoder().decode(b64u(p)));
+  if (!jwks || Date.now() - jwksAt > 3600e3) {
+    const r = await fetch(`https://${env.ACCESS_TEAM}.cloudflareaccess.com/cdn-cgi/access/certs`);
+    jwks = (await r.json()).keys; jwksAt = Date.now();
+  }
+  const jwk = jwks.find(k => k.kid === head.kid);
+  if (!jwk) return null;
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64u(s), new TextEncoder().encode(h + '.' + p));
+  if (!ok) return null;
+  const aud = Array.isArray(pay.aud) ? pay.aud : [pay.aud];
+  if (!aud.includes(env.ACCESS_AUD) || pay.exp * 1000 < Date.now()) return null;
+  if (env.ALLOWED_EMAILS) {
+    const list = env.ALLOWED_EMAILS.toLowerCase().split(/[\s,;]+/).filter(Boolean);
+    if (!list.includes(String(pay.email || '').toLowerCase())) return null;
+  }
+  return pay.email || 'utente';
+}
+
+/* ---- Google Calendar con service account ---- */
+let gTok = null, gExp = 0;
+async function googleToken(env) {
+  if (gTok && Date.now() < gExp - 60e3) return gTok;
+  const sa = JSON.parse(env.GOOGLE_SA_JSON);
+  const now = Math.floor(Date.now() / 1000);
+  const enc = (o) => btoa(JSON.stringify(o)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const unsigned = enc({ alg: 'RS256', typ: 'JWT' }) + '.' + enc({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/calendar', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 });
+  const pem = sa.private_key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const key = await crypto.subtle.importKey('pkcs8', Uint8Array.from(atob(pem), c => c.charCodeAt(0)), { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned)));
+  let bin = ''; sig.forEach(b => bin += String.fromCharCode(b));
+  const jwt = unsigned + '.' + btoa(bin).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=' + jwt });
+  const t = await r.json();
+  if (!t.access_token) throw new Error('Google: ' + (t.error_description || t.error || 'token non ottenuto'));
+  gTok = t.access_token; gExp = Date.now() + (t.expires_in || 3600) * 1000;
+  return gTok;
+}
+async function calendar(env, tool, input) {
+  if (!env.GOOGLE_SA_JSON) return json({ error: 'Google Calendar non configurato' }, 501);
+  if (tool !== 'create_event' && tool !== 'update_event') return json({ error: 'Operazione non consentita' }, 400);
+  const calId = input.calendarId || env.CALENDAR_ID;
+  if (!calId || typeof input.summary !== 'string' && tool === 'create_event') return json({ error: 'Dati evento mancanti' }, 400);
+  const body = {};
+  if (input.summary !== undefined) body.summary = String(input.summary).slice(0, 300);
+  if (input.description !== undefined) body.description = String(input.description).slice(0, 8000);
+  if (input.location !== undefined) body.location = String(input.location).slice(0, 300);
+  if (input.colorId) body.colorId = String(input.colorId);
+  if (input.startTime && input.endTime) {
+    if (input.allDay) { body.start = { date: input.startTime.slice(0, 10) }; body.end = { date: input.endTime.slice(0, 10) }; }
+    else { body.start = { dateTime: input.startTime, timeZone: 'Europe/Rome' }; body.end = { dateTime: input.endTime, timeZone: 'Europe/Rome' }; }
+  }
+  const base = 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events';
+  const tok = await googleToken(env);
+  const upd = tool === 'update_event';
+  if (upd && !input.eventId) return json({ error: 'eventId mancante' }, 400);
+  const r = await fetch(upd ? base + '/' + encodeURIComponent(input.eventId) : base, { method: upd ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const ev = await r.json();
+  if (!r.ok) return json({ error: (ev.error && ev.error.message) || 'Errore Google', code: r.status }, 502);
+  return json({ payload: { id: ev.id, htmlLink: ev.htmlLink } });
+}
+
+export default {
+  async fetch(req, env) {
+    const url = new URL(req.url);
+    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
+    try {
+      const who = await accessEmail(req, env);
+      if (!who) return json({ error: 'Accesso non autorizzato' }, 401);
+
+      if (url.pathname === '/api/all' && req.method === 'GET') {
+        const { results } = await env.DB.prepare('SELECT path, data FROM docs').all();
+        const docs = {};
+        for (const r of results) { try { docs[r.path] = JSON.parse(r.data); } catch (e) {} }
+        return json({ docs });
+      }
+      if (url.pathname === '/api/doc') {
+        const path = url.searchParams.get('path') || '';
+        if (!PATH_OK.test(path)) return json({ error: 'Percorso non valido' }, 400);
+        if (req.method === 'PUT') {
+          const txt = await req.text();
+          if (txt.length > 300000) return json({ error: 'Documento troppo grande' }, 413);
+          JSON.parse(txt);
+          await env.DB.prepare('INSERT INTO docs (path, data, updated) VALUES (?1, ?2, ?3) ON CONFLICT(path) DO UPDATE SET data = ?2, updated = ?3').bind(path, txt, Date.now()).run();
+          return json({ ok: true });
+        }
+        if (req.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM docs WHERE path = ?1').bind(path).run();
+          return json({ ok: true });
+        }
+      }
+      if (url.pathname === '/api/calendar' && req.method === 'POST') {
+        const b = await req.json();
+        return await calendar(env, b.tool, b.input || {});
+      }
+      return json({ error: 'Non trovato' }, 404);
+    } catch (e) {
+      return json({ error: String(e && e.message || e) }, 500);
+    }
+  }
+};

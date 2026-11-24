@@ -1,0 +1,19 @@
+{
+  "name": "fotopier-gestionale",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "fotopier-gestionale", "database_id": "f79a5e3d-1bc9-48e2-a577-75a397cb814b" }
+  ],
+  "vars": {
+    "CALENDAR_ID": "weddingfotopier@gmail.com",
+    "ACCESS_TEAM": "",
+    "ACCESS_AUD": "",
+    "ALLOWED_EMAILS": ""
+  }
+}

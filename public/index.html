@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestionale Foto Pier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+/* Layout: barra laterale fissa + area di lavoro; su telefono la barra diventa fascia in alto */
+:root{
+  --bg:#f6f5f2; --panel:#ffffff; --ink:#1b1b1a; --muted:#6c6a66; --line:#e2dfd9;
+  --accent:#2f8f4e; --accent-ink:#ffffff; --pale:#f0eeea;
+  --good:#1f6f3f; --warn:#b7791f; --bad:#b3261e; --info:#2b6cb0;
+  --font:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141413; --panel:#1d1d1b; --ink:#f0eee9; --muted:#9b978f; --line:#2f2e2b; --pale:#262522;
+  --accent:#5cc084; --accent-ink:#07210f; --good:#5bbd83; --warn:#e0a94a; --bad:#ef7a70; --info:#6aa7e6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141413; --panel:#1d1d1b; --ink:#f0eee9; --muted:#9b978f; --line:#2f2e2b; --pale:#262522;
+  --accent:#5cc084; --accent-ink:#07210f; --good:#5bbd83; --warn:#e0a94a; --bad:#ef7a70; --info:#6aa7e6; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100%}
+.side{background:var(--panel);border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;height:100dvh}
+.brand{font-weight:800;font-size:19px;letter-spacing:.02em;padding:0 10px 14px}
+.brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0;margin-top:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:13px}
+.nav a:hover{background:var(--pale)}
+.nav a.on{background:var(--ink);color:var(--bg)}
+.nav .count{margin-left:auto;font-size:11px;opacity:.7}
+.side .foot{margin-top:auto;font-size:11px;color:var(--muted);padding:8px 10px}
+main{padding:26px clamp(16px,3vw,36px) 60px;min-width:0;max-width:1180px;width:100%}
+h1{font-size:26px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);margin:0 0 12px;font-weight:700}
+.sub{color:var(--muted);margin:0 0 22px}
+.top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:14px}
+.kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.kpi .v{font-size:27px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+.kpi .n{font-size:12px;color:var(--muted);margin-top:2px}
+.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.btn{border:1px solid var(--line);background:var(--panel);padding:9px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+.btn:hover{background:var(--pale)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.pri:hover{filter:brightness(1.07)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.del{color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;background:var(--pale);white-space:nowrap}
+.pill.good{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.pill.info{background:color-mix(in srgb,var(--info) 16%,transparent);color:var(--info)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;padding:0 10px 8px}
+td select{min-width:112px}
+td{padding:10px;border-top:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--pale)}
+.scroll{overflow-x:auto}
+.empty{color:var(--muted);padding:18px 4px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.item:first-of-type{border-top:0}
+.item .d{width:50px;text-align:center;flex:none}
+.item .d b{display:block;font-size:20px;line-height:1}
+.item .d span{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.07em}
+.item .m{flex:1;min-width:0}
+.item .m b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .m span{font-size:12px;color:var(--muted)}
+.item .e{text-align:right;font-weight:700}
+.item:hover .m b{color:var(--accent)}
+.bars{display:flex;align-items:flex-end;gap:8px;height:140px;padding-top:8px}
+.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;min-width:0}
+.bar i{display:block;width:100%;max-width:34px;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+.bar i.in{background:var(--ink);opacity:.85}
+.bar em{font-style:normal;font-size:10px;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:8px}
+.legend span:before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;background:var(--accent)}
+.legend span.in:before{background:var(--ink)}
+.legend span.ap:before{background:var(--info)}
+/* form */
+.f{display:grid;gap:10px;grid-template-columns:repeat(12,minmax(0,1fr));margin-bottom:10px}
+.f label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;grid-column:span 4}
+.f label.s2{grid-column:span 2}.f label.s3{grid-column:span 3}.f label.s6{grid-column:span 6}.f label.s8{grid-column:span 8}.f label.s12{grid-column:span 12}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13.5px;width:100%;text-transform:none;letter-spacing:0;font-weight:500;min-width:0}
+textarea{resize:vertical;min-height:64px}
+.sect{margin-bottom:14px}
+.svc{display:grid;grid-template-columns:24px minmax(110px,1.1fr) minmax(160px,2fr) 110px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.svc.off{opacity:.55}
+.nl{position:relative}.nl summary{list-style:none;cursor:pointer}.nl summary::-webkit-details-marker{display:none}
+.nl[open]::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40}
+.nlp{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:41;width:min(520px,92vw);max-height:72vh;overflow:auto;padding:16px;box-shadow:0 16px 48px rgba(0,0,0,.3)}
+.nlp input.nls{width:100%;margin:8px 0 6px}
+.nlr{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:10px 4px;cursor:pointer;font:inherit;color:inherit}.nlr:hover{background:rgba(0,0,0,.04)}
+.lwr{display:grid;grid-template-columns:minmax(110px,.8fr) 150px minmax(180px,2fr);gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.lwr .lk{grid-column:1/-1}
+.lwr input,.lwr select{padding:7px 9px;font-size:13px}
+@media(max-width:700px){.lwr{grid-template-columns:1fr}}
+.tsv{display:grid;grid-template-columns:minmax(80px,.6fr) minmax(130px,1.2fr) minmax(150px,1.6fr) 130px auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.tsv .lk{grid-column:1/-1}
+.tsv input,.tsv select{padding:6px 8px;font-size:13px}
+.twd{margin-top:14px;border-left:4px solid var(--accent)}
+.twd a{color:inherit;text-decoration:none}.twd a.btn:hover{background:rgba(0,0,0,.04)}.twd a b:hover{text-decoration:underline}
+@media(max-width:700px){.tsv{grid-template-columns:1fr 1fr}.tsv>*:nth-child(n+3){grid-column:span 2}}
+.svc .nm{font-weight:700}
+.svc input,.svc select{padding:6px 8px;font-size:13px}
+.team{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--pale);border-radius:99px;padding:2px 9px;font-size:11.5px;font-weight:600;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.add{border-style:dashed;background:transparent}
+.sum{display:grid;gap:0;max-width:340px;margin-left:auto;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sum div{display:flex;justify-content:space-between;padding:9px 14px;border-top:1px solid var(--line);font-weight:600}
+.sum div:first-child{border-top:0;background:var(--pale)}
+.sum div:last-child{background:var(--ink);color:var(--bg);font-size:16px;font-weight:800}
+.hint{font-size:12px;color:var(--muted)}
+.cal{border-left:6px solid var(--accent);background:var(--pale);padding:12px 14px;border-radius:0 10px 10px 0}
+.cal b{font-size:20px;letter-spacing:.04em}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:9px;font-weight:600;z-index:9;max-width:90vw}
+.banner{background:color-mix(in srgb,var(--warn) 16%,transparent);border:1px solid var(--warn);padding:9px 12px;border-radius:9px;margin-bottom:14px;font-size:12.5px}
+.search{max-width:300px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cd{min-height:52px;border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-size:11px;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:inherit;min-width:0}
+.cd.h{min-height:0;border:0;font-weight:700;color:var(--muted);font-size:10px;text-align:center;padding:0 0 2px}
+.cd b{font-size:12px}
+.cd.t{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.cd.w{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cd.w span{font-weight:700;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cd.ap{border-color:var(--info);background:color-mix(in srgb,var(--info) 14%,transparent)}
+.cd.ap span{font-weight:700;font-size:10.5px;color:var(--info);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-weight:600;font-size:13px}
+.att:first-of-type{border-top:0}
+.att i{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none;background:var(--info)}
+.att.warn i{background:var(--warn)}.att.bad i{background:var(--bad)}
+.att:hover span{color:var(--accent)}
+.lw{display:block;padding:14px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.lw:first-of-type{border-top:0;padding-top:0}
+.lw:hover b{color:var(--accent)}
+.svr{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0 0;font-size:13px}
+.svr .nm{font-weight:700}
+.who{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px 14px;border-right:0;border-bottom:1px solid var(--line)}
+  .brand{padding:0 8px 0 0}.brand small,.side .foot{display:none}
+  .nav{display:flex;gap:4px;flex-wrap:wrap}.nav a{padding:8px 10px}
+  .svc{grid-template-columns:24px 1fr 1fr;}
+  .svc>*:nth-child(n+4){grid-column:span 3}
+  .f label,.f label.s2,.f label.s3,.f label.s6,.f label.s8{grid-column:span 6}
+  .f label.s12{grid-column:span 12}
+}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">FOTO PIER<small>Gestionale matrimoni</small></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot" id="foot"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- utilità ---------- */
+var $=function(s,r){return (r||document).querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function num(v){var n=parseFloat(String(v==null?'':v).replace(/\./g,function(m,i,s){return /,/.test(s)?'':m}).replace(',','.'));return isFinite(n)?n:0}
+function eur(n){var v=Math.round(Number(n||0)*100)/100,neg=v<0;v=Math.abs(v);var p=v.toFixed(2).split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');return (neg?'-':'')+p[0]+','+p[1]+' \u20ac'}
+function two(n){return (n<10?'0':'')+n}
+function parseD(s){if(!s)return null;var p=String(s).split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+var MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+var MESI3=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function dlong(s){var d=parseD(s);return d?d.getDate()+' '+MESI[d.getMonth()]+' '+d.getFullYear():''}
+function dshort(s){var d=parseD(s);return d?two(d.getDate())+'/'+two(d.getMonth()+1)+'/'+d.getFullYear():''}
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+two(d.getMonth()+1)+'-'+two(d.getDate())}
+function daysTo(s){var d=parseD(s);if(!d)return null;var t=parseD(todayStr());return Math.round((d-t)/86400000)}
+function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(function(){t.hidden=true},3200)}
+
+/* ---------- modello ---------- */
+var SERVIZI=[
+  {k:'foto',label:'Servizio fotografico',desc:'Solo servizio fotografico'},
+  {k:'fotolibro',label:'Fotolibro',desc:''},
+  {k:'album',label:'Album genitori',desc:''},
+  {k:'video',label:'Video',desc:''},
+  {k:'share',label:'Share Love',desc:''},
+  {k:'casa',label:'Casa sposo',desc:''}];
+var STATI=[['da_fare','Da fare'],['in_corso','In corso'],['finito','Finito'],['consegnato','Consegnato']];
+var TIPI_APP=['Visione impaginato','Programma consegna matrimonio','Sopralluogo','Scelta foto','Altro'];
+var METODI=['Bonifico','Contanti','Assegno','Carta','Altro'];
+var DEFAULT_SET={titolare:'Simone Mafessoni',piva:'04256030984',indirizzo:'Via Mulini 68 · 25039 Travagliato (BS)',tel:'Pier 338 4426451 · Simone 334 7172807',web:'www.fotopier.com · info@fotopier.com',iban:'IT80J0538754870000004693671',intestatario:'Simone Mafessoni',mailBonifico:'weddingfotopier@gmail.com',team:['Pier','Simone','Emilio','Andrea'],calendarId:'weddingfotopier@gmail.com'};
+
+function emptyWedding(anno,numero){
+  var o={id:anno+'-'+(numero<10?'00':numero<100?'0':'')+numero,anno:anno,numero:numero,data:'',ora:'',contrattoData:todayStr(),
+    sposo:{nome:'',via:'',citta:'',prov:'',tel:''},sposa:{nome:'',via:'',citta:'',prov:'',tel:''},
+    chiesa:{nome:'',citta:'',prov:''},ristorante:{nome:'',citta:'',prov:''},email:'',condivisione:'',
+    residenza:'',cf:'',note:'',contratto:'da_firmare',appuntamenti:[],servizi:[],pagamenti:[],creato:Date.now()};
+  SERVIZI.forEach(function(s){o.servizi.push({k:s.k,attivo:s.k==='foto',desc:s.desc,prezzo:0,team:[],stato:'da_fare',link:''})});
+  return o;
+}
+function imponibile(w){return (w.servizi||[]).reduce(function(a,s){return a+(s.attivo?num(s.prezzo):0)},0)}
+function totale(w){return imponibile(w)}
+function acconti(w){return (w.pagamenti||[]).filter(function(p){return p.tipo!=='sconto'}).reduce(function(a,p){return a+num(p.importo)},0)}
+function sconti(w){return (w.pagamenti||[]).filter(function(p){return p.tipo==='sconto'}).reduce(function(a,p){return a+num(p.importo)},0)}
+function saldo(w){return totale(w)-acconti(w)-sconti(w)}
+function attivi(w){return (w.servizi||[]).filter(function(s){return s.attivo})}
+function lavori(w){return (w.servizi||[]).filter(function(s){return s.attivo&&(s.k==='foto'||s.k==='video'||s.k==='share')})}
+function statoW(w){
+  var a=lavori(w);var d=daysTo(w.data);
+  if(!a.length)return {k:'bozza',t:'Bozza',c:''};
+  var cons=a.every(function(s){return s.stato==='consegnato'});
+  var fin=a.every(function(s){return s.stato==='finito'||s.stato==='consegnato'});
+  if(cons)return {k:'consegnato',t:'Consegnato',c:'good'};
+  if(fin)return {k:'finito',t:saldo(w)>0.005?'Finito · da saldare':'Finito · da consegnare',c:'info'};
+  if(d!==null&&d>=0&&!w.lavorazione)return {k:'arrivo',t:d===0?'Oggi':'In arrivo',c:'warn'};
+  return {k:'lavoro',t:'In lavorazione',c:'bad'};
+}
+function addMonths(str,n){var d=parseD(str);d.setMonth(d.getMonth()+n);return d.getFullYear()+'-'+two(d.getMonth()+1)+'-'+two(d.getDate())}
+function syncFinito(w){var a=lavori(w);var fin=a.length>0&&a.every(function(s){return s.stato==='finito'||s.stato==='consegnato'});
+  if(fin&&!w.finitoIl)w.finitoIl=todayStr();if(!fin&&w.finitoIl)delete w.finitoIl}
+/* timer: parte il giorno dopo il matrimonio, si ferma quando il lavoro è finito, diventa rosso dopo 3 mesi */
+function timerW(w){
+  if(!w.data||!lavori(w).length)return null;
+  var dt=daysTo(w.data);if(dt===null||dt>=0)return null;
+  var stopped=!!w.finitoIl;
+  var end=stopped?w.finitoIl:todayStr();
+  var days=Math.round((parseD(end)-parseD(w.data))/86400000);
+  var limit=addMonths(w.data,3);
+  var red=parseD(end)>parseD(limit);
+  return {days:days,stopped:stopped,red:red,limit:limit};
+}
+function timerPill(w){var t=timerW(w);if(!t)return '';
+  var txt=t.stopped?'Finito in '+t.days+' gg':(t.red?'Oltre 3 mesi · '+t.days+' gg':'Giorno '+t.days+' di lavoro');
+  return '<span class="pill '+(t.red?'bad':(t.stopped?'good':'info'))+'" title="Scadenza 3 mesi: '+esc(dshort(t.limit))+'">'+esc(txt)+'</span>'}
+function attenzioni(w){
+  var out=[],n=nomiSposi(w),st=statoW(w);
+  if(st.k==='consegnato')return out;
+  if(!w.data)out.push({t:'Manca la data del matrimonio di '+n,l:'warn'});
+  var t=timerW(w);
+  if(t&&t.red&&!t.stopped)out.push({t:'Lavoro oltre i 3 mesi: '+n,l:'bad'});
+  if(st.k==='finito'&&saldo(w)>0.005)out.push({t:'Lavoro finito, consegna in attesa del saldo: '+n,l:'info'});
+  var d=daysTo(w.data);
+  if(d!==null&&d<=30&&attivi(w).some(function(x){return !(x.team&&x.team.length)}))out.push({t:'Team da assegnare: '+n,l:'warn'});
+  (w.appuntamenti||[]).forEach(function(a){if(!a.fatto&&a.data&&daysTo(a.data)<0)out.push({t:'Appuntamento scaduto, non segnato come fatto ('+a.tipo+'): '+n,l:'warn'});else if(!a.fatto&&a.data&&daysTo(a.data)===0)out.push({t:'Oggi: '+a.tipo+(a.ora?' alle '+a.ora:'')+' · '+n,l:'info'})});
+  if(!w.condivisione&&attivi(w).length)out.push({t:'Consenso alla condivisione da raccogliere: '+n,l:'info'});
+  return out.map(function(x){x.id=w.id;return x});
+}
+function nomiSposi(w){var a=(w.sposo.nome||'').trim(),b=(w.sposa.nome||'').trim();return a&&b?a+' & '+b:(a||b||'Nuovo matrimonio')}
+
+/* ---------- archivio (db condiviso, con ripiego in memoria) ---------- */
+var S={listino:[],weddings:[],set:Object.assign({},DEFAULT_SET),db:null,live:false,loaded:false,route:'dashboard',filter:'tutti',q:''};
+var saveTimers={};
+function persist(w){
+  if(!S.db){return}
+  clearTimeout(saveTimers[w.id]);
+  saveTimers[w.id]=setTimeout(function(){
+    S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w))).catch(function(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))});
+  },500);
+}
+function persistSet(){if(S.db){S.db.doc('impostazioni/studio').set(JSON.parse(JSON.stringify(S.set))).catch(function(){toast('Impostazioni non salvate')})}}
+function byId(id){for(var i=0;i<S.weddings.length;i++)if(S.weddings[i].id===id)return S.weddings[i];return null}
+function sortW(){S.weddings.sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')})}
+
+/* ---------- navigazione ---------- */
+function nav(){
+  var n=$('#nav');var r=S.route;
+  var items=[['dashboard','Dashboard'],['matrimoni','Matrimoni'],['lavorazione','Lavorazione'],['team','Team'],['listino','Listino'],['amministrazione','Amministrazione'],['impostazioni','Impostazioni']];
+  n.innerHTML=items.map(function(i){var on=r===i[0]||(i[0]==='matrimoni'&&r.indexOf('matrimonio-')===0)||(i[0]==='lavorazione'&&r.indexOf('lavoro-')===0);
+    return '<a href="#'+i[0]+'" class="'+(on?'on':'')+'">'+i[1]+(i[0]==='matrimoni'?'<span class="count">'+S.weddings.length+'</span>':'')+'</a>'}).join('');
+  $('#foot').textContent=S.db?(S.live?'Dati salvati online':'Connessione in corso…'):'Prova senza salvataggio';
+}
+function route(){
+  var h=(location.hash||'#dashboard').slice(1);S.route=h;nav();
+  var m=$('#main');
+  if(h==='dashboard'){m.innerHTML=viewDash();bindDash()}
+  else if(h==='matrimoni'){m.innerHTML=viewList();bindList()}
+  else if(h==='lavorazione'){m.innerHTML=viewLav();bindAdm()}
+  else if(h==='team'){m.innerHTML=viewTeam();bindTeam()}
+  else if(h.indexOf('lavoro-')===0){var lw=byId(h.slice(7));if(lw){m.innerHTML=viewLavW(lw);bindLavW(lw)}else m.innerHTML='<h1>Matrimonio non trovato</h1><p class="sub"><a href="#lavorazione">Torna a Lavorazione</a></p>'}
+  else if(h==='listino'){m.innerHTML=viewListino();bindListino()}
+  else if(h==='amministrazione'){m.innerHTML=viewAdm();bindAdm()}
+  else if(h==='impostazioni'){m.innerHTML=viewSet();bindSet()}
+  else if(h.indexOf('matrimonio-')===0){var w=byId(h.slice(11));if(w){m.innerHTML=viewW(w);bindW(w)}else m.innerHTML='<h1>Matrimonio non trovato</h1><p class="sub"><a href="#matrimoni">Torna all’elenco</a></p>'}
+  else{m.innerHTML=viewDash();bindDash()}
+  window.scrollTo(0,0);
+}
+function refresh(){
+  nav();
+  var h=S.route;
+  var active=document.activeElement;var typing=active&&/INPUT|TEXTAREA|SELECT/.test(active.tagName)&&$('#main').contains(active);
+  if(h==='dashboard'||h==='matrimoni'||h==='amministrazione'||h==='lavorazione'||h==='team'){if(typing)return;route2()}
+  else if(h.indexOf('matrimonio-')===0&&!typing){var w=byId(h.slice(11));if(w&&JSON.stringify(w)!==S._shown){var y=window.scrollY;$('#main').innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
+}
+function route2(){var y=window.scrollY;var h=S.route;var m=$('#main');if(h==='dashboard'){m.innerHTML=viewDash();bindDash()}else if(h==='lavorazione'){m.innerHTML=viewLav();bindAdm()}else if(h==='team'){m.innerHTML=viewTeam();bindTeam()}else if(h==='amministrazione'){m.innerHTML=viewAdm();bindAdm()}else{m.innerHTML=viewList();bindList()}window.scrollTo(0,y)}
+window.addEventListener('hashchange',route);
+
+/* ---------- dashboard ---------- */
+function calendario(){
+  var now=new Date();if(S.calY==null){S.calY=now.getFullYear();S.calM=now.getMonth()}
+  var y=S.calY,m=S.calM,first=new Date(y,m,1),start=(first.getDay()+6)%7,dim=new Date(y,m+1,0).getDate();
+  var by={};S.weddings.forEach(function(w){if(!w.data)return;var d=parseD(w.data);if(d.getFullYear()===y&&d.getMonth()===m)(by[d.getDate()]=by[d.getDate()]||[]).push(w)});
+  var apBy={};S.weddings.forEach(function(w){(w.appuntamenti||[]).forEach(function(a){if(a.fatto||!a.data)return;var d=parseD(a.data);if(d.getFullYear()===y&&d.getMonth()===m)(apBy[d.getDate()]=apBy[d.getDate()]||[]).push({w:w,a:a})})});
+  var tod=todayStr(),cells='';
+  ['L','M','M','G','V','S','D'].forEach(function(x){cells+='<div class="cd h">'+x+'</div>'});
+  for(var i=0;i<start;i++)cells+='<div class="cd"></div>';
+  for(var d=1;d<=dim;d++){
+    var ds=y+'-'+two(m+1)+'-'+two(d),ws=by[d]||[],isT=ds===tod;
+    if(ws.length){var w=ws[0];var sur=(w.sposo.nome||w.sposa.nome||'Matrimonio').split(' ')[0];
+      cells+='<a class="cd w'+(isT?' t':'')+'" href="#matrimonio-'+esc(w.id)+'" title="'+esc(ws.map(nomiSposi).join(' / '))+'"><b>'+d+'</b><span>'+esc(sur)+(ws.length>1?' +'+(ws.length-1):'')+'</span></a>'}
+    else if(apBy[d]){var ap=apBy[d][0];cells+='<a class="cd ap'+(isT?' t':'')+'" href="#matrimonio-'+esc(ap.w.id)+'" title="'+esc(apBy[d].map(function(x){return x.a.tipo+' · '+nomiSposi(x.w)}).join(' / '))+'"><b>'+d+'</b><span>'+esc(ap.a.tipo.split(' ')[0])+(ap.a.ora?' '+esc(ap.a.ora):'')+'</span></a>'}
+    else cells+='<div class="cd'+(isT?' t':'')+'"><b>'+d+'</b></div>';
+  }
+  return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Calendario</h2><div class="row" style="gap:6px"><button class="btn sm" id="calP" aria-label="Mese precedente">‹</button><b style="min-width:130px;text-align:center;text-transform:capitalize">'+MESI[m]+' '+y+'</b><button class="btn sm" id="calN" aria-label="Mese successivo">›</button></div></div><div class="cal-grid">'+cells+'</div><div class="legend"><span>Matrimonio</span><span style="--c:var(--info)" class="ap">Appuntamento</span></div></div>';
+}
+function viewDash(){
+  var anno=new Date().getFullYear();
+  var all=S.weddings.slice();
+  var yr=all.filter(function(w){return (w.data||'').slice(0,4)==String(anno)});
+  var tod=todayStr();
+  var fatti=yr.filter(function(w){return w.data<tod}).length,inArr=yr.length-fatti;
+  var prossimi=all.filter(function(w){return w.data&&w.data>=tod}).slice(0,5);
+  var lav=all.filter(function(w){var s=statoW(w);return s.k==='lavoro'||s.k==='finito'});
+  var daCons=all.filter(function(w){return statoW(w).k==='finito'}).length;
+  var cnt={da_fare:0,in_corso:0,finito:0,consegnato:0};
+  all.forEach(function(w){var k=statoW(w).k;if(k==='arrivo'||k==='bozza')return;attivi(w).forEach(function(s){cnt[s.stato]=(cnt[s.stato]||0)+1})});
+  var prox=prossimi[0],dd=prox?daysTo(prox.data):null;
+  var al=[];all.forEach(function(w){al=al.concat(attenzioni(w))});
+  var ord={bad:0,warn:1,info:2};al.sort(function(a,b){return ord[a.l]-ord[b.l]});
+  var out='<div class="top"><div><h1>Dashboard</h1><p class="sub">Anno '+anno+'</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop">Nuovo matrimonio</a></div>';
+  if(!S.db)out+='<div class="banner">Questa copia non salva i dati: aprila dal tuo account per salvarli online.</div>';
+  out+='<div class="grid kpis">'
+   +kpi('Matrimoni '+anno,String(yr.length),fatti+' celebrati · '+inArr+' in arrivo')
+   +kpi('Prossimo matrimonio',prox?(dd===0?'Oggi':dd+(dd===1?' giorno':' giorni')):'—',prox?nomiSposi(prox):'nessuno in programma')
+   +kpi('Lavori da completare',String(lav.length),'matrimoni passati non ancora consegnati')
+   +kpi('Pronti per la consegna',String(daCons),'lavoro finito')+'</div>';
+  out+='<div class="grid two">'+calendario();
+  out+='<div class="card"><h2>Attenzioni'+(al.length?' · '+al.length:'')+'</h2>'+(al.length?al.slice(0,9).map(function(x){return '<a class="att '+x.l+'" href="#matrimonio-'+esc(x.id)+'"><i></i><span>'+esc(x.t)+'</span></a>'}).join('')+(al.length>9?'<div class="hint" style="padding-top:8px">e altre '+(al.length-9)+'</div>':''):'<div class="empty">Niente da segnalare.</div>')+'</div>';
+  out+='<div class="card"><h2>Lavorazioni</h2><div class="row" style="margin-bottom:10px">'
+   +STATI.map(function(s){return '<span class="pill '+(s[0]==='consegnato'?'good':s[0]==='finito'?'info':s[0]==='in_corso'?'warn':'')+'">'+s[1]+' · '+cnt[s[0]]+'</span>'}).join('')+'</div>'
+   +(lav.length?lav.map(function(w){return itemW(w,'',timerPill(w))}).join(''):'<div class="empty">Nessun lavoro da completare.</div>')+'</div>';
+  var ap=[];all.forEach(function(w){(w.appuntamenti||[]).forEach(function(a){if(!a.fatto&&a.data&&a.data>=tod)ap.push({w:w,a:a})})});
+  ap.sort(function(x,y){return (x.a.data+(x.a.ora||'')).localeCompare(y.a.data+(y.a.ora||''))});
+  out+='<div class="card"><h2>Prossimi appuntamenti</h2>'+(ap.length?ap.slice(0,6).map(function(x){var d=parseD(x.a.data);return '<a class="item" href="#matrimonio-'+esc(x.w.id)+'" style="text-decoration:none;color:inherit"><div class="d"><b>'+d.getDate()+'</b><span>'+MESI3[d.getMonth()]+'</span></div><div class="m"><b>'+esc(x.a.tipo)+'</b><span>'+esc(nomiSposi(x.w))+(x.a.note?' · '+esc(x.a.note):'')+'</span></div><div class="e">'+(x.a.ora?esc(x.a.ora):'')+'</div></a>'}).join(''):'<div class="empty">Nessun appuntamento fissato.</div>')+'</div>';
+  out+='<div class="card"><h2>Prossimi matrimoni</h2>'+(prossimi.length?prossimi.map(function(w){return itemW(w)}).join(''):'<div class="empty">Nessun matrimonio in programma.</div>')+'</div>';
+  out+='</div>';
+  return out;
+}
+function bindDash(){
+  var p=$('#calP'),n=$('#calN');
+  if(p)p.addEventListener('click',function(){S.calM--;if(S.calM<0){S.calM=11;S.calY--}route2()});
+  if(n)n.addEventListener('click',function(){S.calM++;if(S.calM>11){S.calM=0;S.calY++}route2()});
+}
+/* ---------- lavorazione ---------- */
+function svcRows(w,onlyOpen){
+  return lavori(w).filter(function(x){return !onlyOpen||x.stato!=='consegnato'}).map(function(x){
+    var cl=x.stato==='consegnato'?'good':x.stato==='finito'?'info':x.stato==='in_corso'?'warn':'';
+    var who=(x.team&&x.team.length)?x.team.map(esc).join(', '):'<span class="hint">nessuno assegnato</span>';
+    return '<div class="svr"><span class="nm">'+esc(svcLabel(x.k))+'</span><span>'+who+'</span><span class="pill '+cl+'">'+esc(STATI.filter(function(t){return t[0]===x.stato})[0][1])+'</span>'+(x.nota?'<span class="hint" style="grid-column:1/-1">'+esc(x.nota)+'</span>':'')+'</div>'}).join('');
+}
+function lavCard(w){
+  var st=statoW(w);
+  return '<a class="lw" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'</a>';
+}
+function viewLav(){
+  var all=S.weddings.filter(function(w){return ((w.data&&daysTo(w.data)<0)||w.lavorazione)&&lavori(w).length});
+  var cand=S.weddings.filter(function(w){return lavori(w).length&&!w.lavorazione&&!(w.data&&daysTo(w.data)<0)}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
+  var inl=all.filter(function(w){var k=statoW(w).k;return k==='lavoro'});
+  var fin=all.filter(function(w){return statoW(w).k==='finito'});
+  var con=all.filter(function(w){return statoW(w).k==='consegnato'});
+  inl.sort(function(a,b){return a.data.localeCompare(b.data)});
+  // per persona
+  var per={};
+  all.forEach(function(w){if(statoW(w).k==='consegnato')return;lavori(w).forEach(function(x){if(x.stato==='finito'||x.stato==='consegnato')return;
+    var names=(x.team&&x.team.length)?x.team:['Da assegnare'];
+    names.forEach(function(n){(per[n]=per[n]||[]).push({w:w,x:x})})})});
+  var names=Object.keys(per).sort(function(a,b){if(a==='Da assegnare')return 1;if(b==='Da assegnare')return -1;return per[b].length-per[a].length});
+  var out='<div class="top"><div><h1>Lavorazione</h1><p class="sub">Matrimoni celebrati, a che punto sono e chi ci lavora</p></div><details class="nl"><summary class="btn pri">+ Nuova lavorazione</summary><div class="card nlp"><b>Scegli il matrimonio</b><input class="nls" type="search" placeholder="Cerca per nome o data">'+(cand.length?cand.map(function(w){return '<button class="nlr" data-startlav="'+esc(w.id)+'"><span>'+esc(nomiSposi(w))+'</span><span class="hint">'+esc(w.data?dlong(w.data):'senza data')+'</span></button>'}).join(''):'<div class="empty">Nessun matrimonio da avviare.</div>')+'</div></details></div>';
+  out+='<div class="grid kpis">'+kpi('In lavorazione',String(inl.length),'matrimoni da completare')+kpi('Finiti',String(fin.length),'da consegnare')+kpi('Consegnati',String(con.length),'chiusi')+kpi('Matrimoni celebrati',String(all.length),'in totale')+'</div>';
+  out+='<div class="card sect"><h2>Chi sta lavorando a cosa</h2>'+(names.length?'<div class="grid two" style="gap:12px">'+names.map(function(n){
+    return '<div class="who"><div class="row" style="justify-content:space-between"><b>'+esc(n)+'</b><span class="pill '+(n==='Da assegnare'?'warn':'info')+'">'+per[n].length+(per[n].length===1?' lavoro aperto':' lavori aperti')+'</span></div>'
+     +per[n].map(function(r){return '<a class="att" href="#lavoro-'+esc(r.w.id)+'" style="font-weight:500"><i></i><span>'+esc(nomiSposi(r.w))+' · '+esc(svcLabel(r.x.k))+' · '+esc(STATI.filter(function(t){return t[0]===r.x.stato})[0][1])+'</span></a>'}).join('')+'</div>'}).join('')+'</div>':'<div class="empty">Nessun lavoro aperto.</div>')+'</div>';
+  out+='<div class="card sect"><h2>In lavorazione · '+inl.length+'</h2>'+(inl.length?inl.map(lavCard).join(''):'<div class="empty">Nessun matrimonio in lavorazione.</div>')+'</div>';
+  out+='<div class="card sect"><h2>Finiti, da consegnare · '+fin.length+'</h2>'+(fin.length?fin.map(lavCard).join(''):'<div class="empty">Nessun lavoro finito in attesa di consegna.</div>')+'</div>';
+  out+='<div class="card sect"><h2>Consegnati · '+con.length+'</h2>'+(con.length?con.map(lavCard).join(''):'<div class="empty">Ancora nessuna consegna.</div>')+'</div>';
+  return out;
+}
+/* ---------- stato album ---------- */
+var ALBUM_ST=[['lavorazione','IN LAVORAZIONE','#ffe3a0','#6b4a00'],['solo_foto','SÌ, FOTO PRONTE','#d4edc4','#2d6a1f'],['impaginato','IMPAGINATO PRONTO · CONTATTARE GLI SPOSI','#e6d3f5','#6a3a96'],['visione','IN ATT VISIONE','#ffe3a0','#6b4a00'],['spedito','IMPAGINATO SPEDITO','#c5e3f7','#17619c'],['arrivato','ALBUM ARRIVATO','#0b4fa3','#ffffff'],['ritiro','Avvisati per ritiro','#b80000','#ffffff'],['consegnato','CONSEGNATO','#12794a','#ffffff']];
+function hasAlbum(w){return (w.servizi||[]).some(function(s){return s.attivo&&(s.k==='fotolibro'||s.k==='album'||(s.k==='foto'&&/album/i.test(s.desc||'')))})}
+function syncFoto(w){var f=(w.servizi||[]).filter(function(s){return s.k==='foto'&&s.attivo})[0];if(!f)return;var a=w.album||'';
+  f.stato=!a?'da_fare':(a==='consegnato'?'consegnato':(a==='solo_foto'||a==='arrivato'||a==='ritiro'?'finito':'in_corso'));syncFinito(w)}
+function albumPill(w){var a=ALBUM_ST.filter(function(x){return x[0]===w.album})[0];return a?'<span class="pill" style="background:'+a[2]+';color:'+a[3]+';border-color:transparent">'+esc(a[1])+'</span>':''}
+var VIDEO_ST=[['lavorazione','IN LAVORAZIONE','#ffe3a0','#6b4a00'],['controllo','IN CONTROLLO','#c5e3f7','#17619c'],['no','VIDEO NO','#ffd0d0','#b00020'],['ok','VIDEO OK','#d4edc4','#2d6a1f'],['consegna','VIDEO IN CONSEGNA','#e6d3f5','#6a3a96']];
+function videoPill(w){var a=VIDEO_ST.filter(function(x){return x[0]===w.videoFase})[0];return a?'<span class="pill" style="background:'+a[2]+';color:'+a[3]+';border-color:transparent">'+esc(a[1])+'</span>':''}
+/* ---------- scheda lavorazione ---------- */
+function viewLavW(w){
+  var ord=['foto','video','share'];
+  var rows=w.servizi.map(function(s,i){return {s:s,i:i}}).filter(function(r){return r.s.attivo&&(r.s.k==='video'||r.s.k==='share')}).sort(function(a,b){return ord.indexOf(a.s.k)-ord.indexOf(b.s.k)});
+  var st=statoW(w);
+  var out='<div class="top"><div><a href="#lavorazione" class="hint">← Lavorazione</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">'+esc(dlong(w.data))+'</p></div><div class="row" style="gap:6px">'+timerPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>';
+  out+='<div class="card sect"><h2>Stato avanzamento lavoro</h2>';
+  if(!rows.length)out+='<div class="empty">Nessun servizio video o Share Love attivo.</div>';
+  out+=rows.map(function(r){var s=r.s,i=r.i;
+    var who=(s.team&&s.team.length)?s.team.map(esc).join(', '):'nessuno assegnato';
+    return '<div class="lwr"><div><b>'+esc(RUOLO[s.k])+'</b><div class="hint">'+esc(who)+'</div></div>'
+     +'<select data-lv="'+i+'.stato">'+STATI.map(function(x){return '<option value="'+x[0]+'"'+(s.stato===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'
+     +'<input data-lv="'+i+'.nota" value="'+esc(s.nota||'')+'" placeholder="Nota, es. ho iniziato il montaggio">'
+     +((s.k==='foto'||s.k==='video')?'<input class="lk" data-lv="'+i+'.link" value="'+esc(s.link||'')+'" placeholder="Link Mega https://mega.nz/...">':'')
+     +'</div>'}).join('');
+  out+='<p class="hint" style="margin:10px 0 0">Consegnato si può segnare solo con saldo a zero. Chi lavora a cosa si sceglie in <a href="#team">Team</a>.</p></div>';
+  if(rows.some(function(r){return r.s.k==='video'}))out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div></div>';
+  var fotoI=-1;w.servizi.forEach(function(x,i){if(x.k==='foto'&&x.attivo)fotoI=i});
+  if(fotoI>=0){var alb=hasAlbum(w);var opts=alb?ALBUM_ST.filter(function(x){return x[0]!=='solo_foto'}):ALBUM_ST.filter(function(x){return x[0]==='lavorazione'||x[0]==='solo_foto'});
+    out+='<div class="card sect"><h2>'+(alb?'Foto e album':'Foto')+'</h2><div class="row" style="gap:12px;align-items:center"><select data-al="1" style="max-width:340px"><option value="">/</option>'+opts.map(function(x){return '<option value="'+x[0]+'"'+(w.album===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+albumPill(w)+'</div>'
+     +'<div class="lwr" style="grid-template-columns:1fr"><input data-lv="'+fotoI+'.link" value="'+esc(w.servizi[fotoI].link||'')+'" placeholder="Link Mega foto https://mega.nz/..."></div></div>';}
+  return out;
+}
+function bindLavW(w){
+  var m=$('#main');
+  m.querySelectorAll('[data-vf]').forEach(function(el){el.addEventListener('change',function(){w.videoFase=el.value;if(!el.value)delete w.videoFase;persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
+  m.querySelectorAll('[data-al]').forEach(function(el){el.addEventListener('change',function(){if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=w.album||'';return}w.album=el.value;if(!el.value)delete w.album;syncFoto(w);persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
+  m.querySelectorAll('[data-lv]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.lv.split('.');var s=w.servizi[+a[0]];
+    if(a[1]==='stato'&&el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=s.stato;return}
+    s[a[1]]=el.value;syncFinito(w);persist(w);if(a[1]==='stato'){var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)}})});
+}
+/* ---------- team ---------- */
+function mailReminder(w,rows){
+  var to=[];var tm=S.set.teamMail||{};
+  rows.forEach(function(x){(x.team||[]).forEach(function(n){if(tm[n]&&to.indexOf(tm[n])<0)to.push(tm[n])})});
+  var luogo=[w.chiesa,w.ristorante].filter(Boolean).join(' · ');
+  var body='Ciao,\nti ricordo il matrimonio di '+nomiSposi(w)+' del '+dlong(w.data)+(w.ora?' alle '+w.ora:'')+'.\n'+(luogo?'Luogo: '+luogo+'\n':'')+'Servizio: '+rows.map(function(x){return svcLabel(x.k)+(x.desc?' ('+x.desc+')':'')}).join(', ')+'\n\nFoto Pier';
+  return 'mailto:'+to.map(encodeURIComponent).join(',')+'?subject='+encodeURIComponent('Reminder matrimonio '+nomiSposi(w)+' · '+dlong(w.data))+'&body='+encodeURIComponent(body);
+}
+var RUOLO={foto:'Fotografo',video:'Videomaker',share:'Share Love'};
+function maxVideo(s){return /premium/i.test(s.desc||'')?2:1}
+function teamList(){var t=(S.set.team||[]).slice();Object.keys(S.set.teamMail||{}).forEach(function(n){if(t.indexOf(n)<0)t.push(n)});return t}
+function viewTeam(){
+  var tm=S.set.teamMail||{};
+  var ws=S.weddings.filter(function(w){return w.data&&attivi(w).some(function(x){return x.k==='foto'||x.k==='video'||x.k==='share'})&&statoW(w).k!=='consegnato'}).sort(function(a,b){return a.data.localeCompare(b.data)});
+  var out='<div class="top"><div><h1>Team</h1><p class="sub">Chi fa cosa in ogni matrimonio, a che punto siamo e reminder via email</p></div></div>';
+  out+='<div class="card sect"><h2>Email del team</h2><div class="f">'+teamList().map(function(n){return '<label class="s6">'+esc(n)+'<input data-tmail="'+esc(n)+'" type="email" value="'+esc(tm[n]||'')+'" placeholder="email di '+esc(n)+'"></label>'}).join('')+'</div><div class="row" style="margin-top:12px" id="addMemRow"><button class="btn" id="addMem">+ Nuovo membro</button></div></div>';
+  out+='<h2 class="sh" style="margin:22px 0 10px">Matrimoni da seguire · '+ws.length+'</h2>';
+  if(!ws.length)out+='<div class="card sect"><div class="empty">Nessun matrimonio con foto, video o Share Love attivi.</div></div>';
+  ws.forEach(function(w){
+    var ord=['foto','video','share'];var rows=w.servizi.map(function(s,i){return {s:s,i:i}}).filter(function(r){return r.s.attivo&&ord.indexOf(r.s.k)>=0}).sort(function(a,b){var x=ord.indexOf(a.s.k),y=ord.indexOf(b.s.k);return (x<0?9:x)-(y<0?9:y)});
+    var allm=mailReminder(w,rows.map(function(r){return r.s}));
+    out+='<div class="card sect twd"><div class="row" style="justify-content:space-between;align-items:flex-start;padding-bottom:6px"><div><a href="#matrimonio-'+esc(w.id)+'"><b>'+esc(nomiSposi(w))+'</b></a><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px">'+timerPill(w)+'<a class="btn sm" href="'+allm+'">✉ Reminder a tutti</a></div></div>';
+    out+=rows.map(function(r){var s=r.s,i=r.i;
+      var team=teamList();(s.team||[]).forEach(function(t){if(team.indexOf(t)<0)team.push(t)});
+      return '<div class="tsv"><div class="nm"><b>'+esc(RUOLO[s.k]||svcLabel(s.k))+'</b>'+(s.k==='video'?'<div class="hint">max '+maxVideo(s)+'</div>':'')+'</div><div class="hint">'+esc(s.desc||'')+'</div>'
+       +'<div class="team">'+team.map(function(t){return '<button class="chip'+((s.team||[]).indexOf(t)>=0?' on':'')+'" data-tt="'+esc(w.id)+'|'+i+'|'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'<button class="chip add" data-tadd="'+esc(w.id)+'|'+i+'">+ aggiungi</button></div>'
+       +'<select data-ts="'+esc(w.id)+'|'+i+'|stato">'+STATI.map(function(x){return '<option value="'+x[0]+'"'+(s.stato===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'
+       +'<a class="btn sm" href="'+mailReminder(w,[s])+'">✉ Reminder</a>'
+       +((s.k==='foto'||s.k==='video'||s.k==='fotolibro')?'<div class="lk"><input data-ts="'+esc(w.id)+'|'+i+'|link" value="'+esc(s.link||'')+'" placeholder="Link Mega https://mega.nz/..." style="width:100%"></div>':'')
+       +'</div>'}).join('')+'</div>';
+  });
+  out+='<p class="hint" style="margin:12px 0 0">Il reminder apre la tua posta con testo e destinatari già pronti: controlli e premi invia. Consegnato si può segnare solo con saldo a zero.</p>';
+  return out;
+}
+function bindTeam(){
+  var m=$('#main');
+  var am=$('#addMem');if(am)am.addEventListener('click',function(){
+    var r=$('#addMemRow');r.innerHTML='<input id="nmN" placeholder="Nome" style="max-width:160px"><input id="nmE" type="email" placeholder="Email (facoltativa)" style="max-width:240px"><button class="btn pri" id="nmOk">Aggiungi</button><button class="btn" id="nmNo">Annulla</button>';
+    $('#nmN').focus();
+    function ok(){var n=$('#nmN').value.trim();if(!n){toast('Scrivi il nome');return}if(teamList().indexOf(n)>=0){toast(n+' è già nel team');return}
+      S.set.team.push(n);S.set.teamMail=S.set.teamMail||{};S.set.teamMail[n]=$('#nmE').value.trim();persistSet();m.innerHTML=viewTeam();bindTeam();toast(n+' aggiunto al team')}
+    $('#nmOk').addEventListener('click',ok);$('#nmNo').addEventListener('click',function(){m.innerHTML=viewTeam();bindTeam()});
+    r.addEventListener('keydown',function(e){if(e.key==='Enter')ok()})});
+  function rerender(){var y=window.scrollY;m.innerHTML=viewTeam();bindTeam();window.scrollTo(0,y)}
+  function sv(w){syncFinito(w);persist(w);rerender()}
+  m.querySelectorAll('[data-tmail]').forEach(function(el){el.addEventListener('change',function(){S.set.teamMail=S.set.teamMail||{};S.set.teamMail[el.dataset.tmail]=el.value.trim();persistSet();rerender()})});
+  m.querySelectorAll('[data-tt]').forEach(function(b){b.addEventListener('click',function(){var a=b.dataset.tt.split('|');var w=byId(a[0]);if(!w)return;var s=w.servizi[+a[1]];s.team=s.team||[];var ix=s.team.indexOf(a[2]);if(ix>=0)s.team.splice(ix,1);else{if(s.k==='video'&&s.team.length>=maxVideo(s)){toast(maxVideo(s)===2?'Videomaker: massimo 2 (Video Premium)':'Videomaker: massimo 1, 2 solo con Video Premium');return}s.team.push(a[2])}sv(w)})});
+  m.querySelectorAll('[data-tadd]').forEach(function(b){b.addEventListener('click',function(){
+    var a=b.dataset.tadd.split('|');var cell=b.parentNode;b.remove();var i=document.createElement('input');i.placeholder='Nome';i.style.width='110px';i.style.padding='3px 8px';cell.appendChild(i);i.focus();
+    var done=false;function ok(){if(done)return;done=true;var n=i.value.trim();var w=byId(a[0]);if(n&&w){var s=w.servizi[+a[1]];s.team=s.team||[];if(s.k==='video'&&s.team.indexOf(n)<0&&s.team.length>=maxVideo(s)){toast('Videomaker: massimo '+maxVideo(s));rerender();return}if(S.set.team.indexOf(n)<0){S.set.team.push(n);persistSet()}if(s.team.indexOf(n)<0)s.team.push(n);sv(w)}else rerender()}
+    i.addEventListener('keydown',function(e){if(e.key==='Enter')ok();if(e.key==='Escape'){done=true;rerender()}});i.addEventListener('blur',ok)})});
+  m.querySelectorAll('[data-ts]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.ts.split('|');var w=byId(a[0]);if(!w)return;var s=w.servizi[+a[1]];
+    if(a[2]==='stato'&&el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=s.stato;return}
+    s[a[2]]=el.value;sv(w)})});
+}
+/* ---------- listino ---------- */
+var listTimer;
+function persistListino(){if(!S.db)return;clearTimeout(listTimer);listTimer=setTimeout(function(){S.db.doc('impostazioni/listino').set({voci:JSON.parse(JSON.stringify(S.listino))}).catch(function(){toast('Listino non salvato')})},500)}
+function viewListino(){
+  var out='<div class="top"><div><h1>Listino</h1><p class="sub">Prezzi dei servizi. Nella scheda matrimonio, scrivendo il nome di una voce il prezzo si compila da solo.</p></div></div>';
+  CATS.forEach(function(c){
+    var v=S.listino.map(function(x,i){return {x:x,i:i}}).filter(function(r){return r.x.cat===c[0]});
+    out+='<div class="card sect"><h2>'+c[1]+'</h2>'+(v.length?'<div class="scroll"><table><thead><tr><th>Voce</th><th>Descrizione</th><th class="r">Prezzo €</th><th></th></tr></thead><tbody>'+v.map(function(r){
+      return '<tr><td><input data-li="'+r.i+'.nome" value="'+esc(r.x.nome)+'" style="min-width:170px"></td><td><input data-li="'+r.i+'.desc" value="'+esc(r.x.desc||'')+'" style="min-width:200px"></td><td><input data-li="'+r.i+'.prezzo" inputmode="decimal" value="'+(r.x.prezzo?esc(String(r.x.prezzo).replace('.',',')):'')+'" style="min-width:90px;text-align:right"></td><td><button class="btn sm del" data-dell="'+r.i+'" aria-label="Elimina voce">×</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty" style="padding-top:0">Nessuna voce.</div>')
+     +'<div class="row" style="margin-top:10px"><button class="btn" data-addl="'+c[0]+'">Aggiungi voce</button></div></div>';
+  });
+  return out;
+}
+function bindListino(){
+  var m=$('#main');
+  m.querySelectorAll('[data-li]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.li.split('.');var it=S.listino[+a[0]];it[a[1]]=a[1]==='prezzo'?num(el.value):el.value;persistListino();if(a[1]==='prezzo')el.value=it.prezzo?String(it.prezzo).replace('.',','):''})});
+  m.querySelectorAll('[data-dell]').forEach(function(b){b.addEventListener('click',function(){S.listino.splice(+b.dataset.dell,1);persistListino();m.innerHTML=viewListino();bindListino()})});
+  m.querySelectorAll('[data-addl]').forEach(function(b){b.addEventListener('click',function(){S.listino.push({cat:b.dataset.addl,nome:'',desc:'',prezzo:0});persistListino();m.innerHTML=viewListino();bindListino();var ins=m.querySelectorAll('[data-li$=".nome"]');if(ins.length){var f=null;S.listino.forEach(function(x,i){if(x===S.listino[S.listino.length-1])f=m.querySelector('[data-li="'+i+'.nome"]')});if(f)f.focus()}})});
+}
+/* ---------- amministrazione ---------- */
+var CATS=[['foto','Foto'],['video','Video'],['share','Share Love'],['extra','Extra']];
+function catOf(k){return k==='video'?'video':k==='share'?'share':(k==='foto'||k==='fotolibro'||k==='album')?'foto':'extra'}
+function admData(list){
+  var c={};CATS.forEach(function(x){c[x[0]]={tot:0,inc:0,sco:0}});
+  var T={tot:0,inc:0,sco:0};
+  list.forEach(function(w){
+    var t=totale(w),im=imponibile(w),a=acconti(w),sc=sconti(w);if(t<=0&&a<=0&&sc<=0)return;
+    T.tot+=t;T.inc+=a;T.sco+=sc;
+    attivi(w).forEach(function(sv){var p=num(sv.prezzo);if(p<=0||t<=0||im<=0)return;var k=catOf(sv.k);c[k].tot+=p*t/im;c[k].inc+=a*p/im;c[k].sco+=sc*p/im});
+  });
+  return {c:c,T:T};
+}
+function viewAdm(){
+  var years={};S.weddings.forEach(function(w){years[w.anno||(w.data||'').slice(0,4)||'—']=1});
+  var ys=Object.keys(years).sort().reverse();
+  var Y=S.admY&&(S.admY==='tutti'||ys.indexOf(String(S.admY))>=0)?String(S.admY):(ys[0]||'tutti');
+  var list=S.weddings.filter(function(w){return Y==='tutti'||String(w.anno)===Y});
+  var D=admData(list),T=D.T,rest=T.tot-T.inc-T.sco;
+  var out='<div class="top"><div><h1>Amministrazione</h1><p class="sub">Cosa abbiamo incassato e cosa dobbiamo ancora ricevere</p></div>'
+   +'<div class="tabs" id="admY">'+ys.concat(['tutti']).map(function(y){return '<button class="chip'+(Y===y?' on':'')+'" data-y="'+y+'">'+(y==='tutti'?'Tutti gli anni':y)+'</button>'}).join('')+'</div></div>';
+  out+='<div class="grid kpis">'+kpi('Totale contratti',eur(T.tot-T.sco),T.sco>0?'al netto di '+eur(T.sco)+' di sconti':list.length+' matrimoni')
+   +kpi('Già incassato',eur(T.inc),T.tot?Math.round(T.inc/Math.max(1,T.tot-T.sco)*100)+'% del totale':'')
+   +kpi('Ancora da incassare',eur(rest),'saldi aperti')
+   +kpi('Fatture da emettere',String(nonFatture(list)),'pagamenti senza fattura')+'</div>';
+  out+='<div class="card sect"><h2>Divisione per categoria</h2><div class="scroll"><table><thead><tr><th>Categoria</th><th class="r">Totale</th><th class="r">Incassato</th><th class="r">Da incassare</th><th style="min-width:140px">Avanzamento</th></tr></thead><tbody>'
+   +CATS.map(function(x){var d=D.c[x[0]],net=d.tot-d.sco,r=net-d.inc,pc=net>0?Math.min(100,Math.round(d.inc/net*100)):0;
+     return '<tr><td><b>'+x[1]+'</b></td><td class="r">'+eur(net)+'</td><td class="r">'+eur(d.inc)+'</td><td class="r"><b>'+eur(r)+'</b></td><td><div style="height:8px;border-radius:4px;background:var(--pale);overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--accent)"></div></div></td></tr>'}).join('')
+   +'<tr><td><b>Totale</b></td><td class="r"><b>'+eur(T.tot-T.sco)+'</b></td><td class="r"><b>'+eur(T.inc)+'</b></td><td class="r"><b>'+eur(rest)+'</b></td><td></td></tr></tbody></table></div>'
+   +'<p class="hint" style="margin:10px 0 0">Gli acconti non sono legati a un servizio: sono ripartiti tra le categorie in proporzione al prezzo. “Extra” comprende Casa sposo.</p></div>';
+  var open=list.filter(function(w){return saldo(w)>0.005&&attivi(w).length}).sort(function(a,b){return (a.data||'').localeCompare(b.data||'')});
+  out+='<div class="grid two"><div class="card"><h2>Da incassare, matrimonio per matrimonio</h2>'+(open.length?'<div class="scroll"><table><tbody>'+open.map(function(w){return '<tr class="click" data-id="'+esc(w.id)+'"><td><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dshort(w.data))+'</div></td><td class="r"><span class="pill warn">'+eur(saldo(w))+'</span></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty">Tutti i saldi sono incassati.</div>')+'</div>';
+  var nf=[];list.forEach(function(w){(w.pagamenti||[]).forEach(function(p){if(p.tipo!=='sconto'&&num(p.importo)>0&&!p.fatturato)nf.push({w:w,p:p})})});
+  out+='<div class="card"><h2>Fatture da emettere</h2>'+(nf.length?'<div class="scroll"><table><tbody>'+nf.map(function(x){return '<tr class="click" data-id="'+esc(x.w.id)+'"><td><b>'+esc(nomiSposi(x.w))+'</b><div class="hint">Pagamento del '+esc(dshort(x.p.data))+(x.p.metodo?' · '+esc(x.p.metodo):'')+'</div></td><td class="r">'+eur(num(x.p.importo))+'</td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty">Nessuna fattura in sospeso.</div>')+'</div></div>';
+  return out;
+}
+function nonFatture(list){var n=0;list.forEach(function(w){(w.pagamenti||[]).forEach(function(p){if(p.tipo!=='sconto'&&num(p.importo)>0&&!p.fatturato)n++})});return n}
+function bindAdm(){
+  var nl=document.querySelector('.nl');
+  if(nl){nl.addEventListener('click',function(e){if(e.target===nl)nl.open=false});
+    document.addEventListener('keydown',function esc2(e){if(!document.body.contains(nl)){document.removeEventListener('keydown',esc2);return}if(e.key==='Escape')nl.open=false});
+    var q=nl.querySelector('.nls');if(q)q.addEventListener('input',function(){var t=q.value.toLowerCase();nl.querySelectorAll('.nlr').forEach(function(b){b.style.display=b.textContent.toLowerCase().indexOf(t)>=0?'':'none'})})}
+  document.querySelectorAll('[data-startlav]').forEach(function(b){b.addEventListener('click',function(){var w=byId(b.dataset.startlav);if(!w)return;w.lavorazione=true;persist(w);location.hash='lavoro-'+w.id})});
+  document.querySelectorAll('#admY .chip').forEach(function(b){b.addEventListener('click',function(){S.admY=b.dataset.y;route2()})});
+  document.querySelectorAll('tr.click').forEach(function(r){r.addEventListener('click',function(){location.hash='matrimonio-'+r.dataset.id})});
+}
+function kpi(l,v,n){return '<div class="card kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div><div class="n">'+esc(n)+'</div></div>'}
+function itemW(w,right,html){
+  var d=parseD(w.data),st=statoW(w);
+  var dd=d?'<div class="d"><b>'+d.getDate()+'</b><span>'+MESI3[d.getMonth()]+'</span></div>':'<div class="d"><span>senza data</span></div>';
+  return '<a class="item" href="#matrimonio-'+esc(w.id)+'" style="text-decoration:none;color:inherit">'+dd+'<div class="m"><b>'+esc(nomiSposi(w))+'</b><span>'+esc(w.chiesa.nome||w.ristorante.nome||'')+(w.ora?' · ore '+esc(w.ora):'')+'</span></div><div class="e">'+(html?html:right?esc(right):'<span class="pill '+st.c+'">'+esc(st.t)+'</span>')+'</div></a>';
+}
+
+/* ---------- elenco ---------- */
+function viewList(){
+  var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Tutti i matrimoni, per data</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop">Nuovo matrimonio</a></div>';
+  out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, chiesa, ristorante" value="'+esc(S.q)+'">'
+   +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['finito','Finiti'],['consegnato','Consegnati'],['saldo','Con saldo']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
+  var q=S.q.toLowerCase();
+  var rows=S.weddings.filter(function(w){
+    var st=statoW(w).k;
+    if(S.filter==='saldo'){if(!(saldo(w)>0.005&&attivi(w).length))return false}
+    else if(S.filter!=='tutti'&&st!==S.filter)return false;
+    if(q){var hay=(nomiSposi(w)+' '+w.chiesa.nome+' '+w.ristorante.nome+' '+w.id).toLowerCase();if(hay.indexOf(q)<0)return false}
+    return true});
+  if(!rows.length)return out+'<div class="card empty">Nessun matrimonio trovato.</div>';
+  out+='<div class="card scroll"><table><thead><tr><th>N.</th><th>Data</th><th>Sposi</th><th>Servizi</th><th class="r">Totale</th><th class="r">Saldo</th><th>Stato</th></tr></thead><tbody>'
+   +rows.map(function(w){var st=statoW(w),s=saldo(w);
+     return '<tr class="click" data-id="'+esc(w.id)+'"><td>'+esc(w.id)+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
+   +'</tbody></table></div>';
+  return out;
+}
+function bindList(){
+  var q=$('#q');if(q)q.addEventListener('input',function(){S.q=q.value;var pos=q.selectionStart;var m=$('#main');m.innerHTML=viewList();bindList();var n=$('#q');n.focus();n.setSelectionRange(pos,pos)});
+  document.querySelectorAll('#flt .chip').forEach(function(b){b.addEventListener('click',function(){S.filter=b.dataset.f;route2()})});
+  document.querySelectorAll('tr.click').forEach(function(r){r.addEventListener('click',function(){location.hash='matrimonio-'+r.dataset.id})});
+}
+function svcLabel(k){for(var i=0;i<SERVIZI.length;i++)if(SERVIZI[i].k===k)return SERVIZI[i].label;return k}
+
+/* ---------- scheda matrimonio ---------- */
+function inp(path,label,cls,type,val){return '<label class="'+(cls||'')+'">'+esc(label)+'<input data-p="'+path+'" type="'+(type||'text')+'" value="'+esc(val==null?'':val)+'"></label>'}
+function get(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
+function setp(o,p,v){var a=p.split('.');var c=o;for(var i=0;i<a.length-1;i++)c=c[a[i]];c[a[a.length-1]]=v}
+function oraSel(v){
+  var o='<option value="">—</option>',found=!v;
+  for(var h=7;h<=23;h++)for(var m=0;m<60;m+=15){var t=two(h)+':'+two(m);if(t===v)found=true;o+='<option'+(t===v?' selected':'')+'>'+t+'</option>'}
+  if(!found)o+='<option selected>'+esc(v)+'</option>';
+  return '<label class="s2">Ora cerimonia<select data-p="ora">'+o+'</select></label>';
+}
+function person(w,key,title){
+  return '<div class="card sect"><h2>'+title+'</h2><div class="f">'
+   +inp(key+'.nome','Nome e cognome','s6','text',w[key].nome)+inp(key+'.tel','Cellulare','s6','tel',w[key].tel)
+   +inp(key+'.via','Via','s6','text',w[key].via)+inp(key+'.citta','Città','s4','text',w[key].citta)+inp(key+'.prov','Prov','s2','text',w[key].prov)+'</div></div>';
+}
+function viewW(w){
+  S._shown=JSON.stringify(w);
+  var st=statoW(w);
+  var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(w.id)+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
+   +'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn del" id="delW">Elimina</button></div></div>';
+  out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
+   +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
+  out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
+  out+='<div class="card sect"><h2>Cerimonia, ricevimento e contatti</h2><div class="f">'
+   +inp('chiesa.nome','Chiesa','s6','text',w.chiesa.nome)+inp('chiesa.citta','Città','s4','text',w.chiesa.citta)+inp('chiesa.prov','Prov','s2','text',w.chiesa.prov)
+   +inp('ristorante.nome','Ristorante','s6','text',w.ristorante.nome)+inp('ristorante.citta','Città','s4','text',w.ristorante.citta)+inp('ristorante.prov','Prov','s2','text',w.ristorante.prov)
+   +inp('email','Social e mail','s6','text',w.email)
+   +'<label class="s3">Consenso condivisione<select data-p="condivisione"><option value=""'+(w.condivisione===''?' selected':'')+'>Da raccogliere</option><option value="si"'+(w.condivisione==='si'?' selected':'')+'>Sì</option><option value="no"'+(w.condivisione==='no'?' selected':'')+'>No</option></select></label></div></div>';
+  // appuntamenti
+  out+='<div class="card sect"><h2>Appuntamenti</h2>';
+  var aps=w.appuntamenti||[];
+  out+=aps.length?'<div class="scroll"><table><thead><tr><th>Appuntamento</th><th>Data</th><th>Ora</th><th>Note</th><th>Fatto</th><th></th></tr></thead><tbody>'+aps.map(function(a,i){
+    return '<tr><td><select data-ap="'+i+'.tipo">'+TIPI_APP.map(function(t){return '<option'+(a.tipo===t?' selected':'')+'>'+esc(t)+'</option>'}).join('')+'</select></td>'
+     +'<td><input type="date" data-ap="'+i+'.data" value="'+esc(a.data||'')+'"></td><td><input type="time" data-ap="'+i+'.ora" value="'+esc(a.ora||'')+'" style="min-width:100px"></td>'
+     +'<td><input data-ap="'+i+'.note" value="'+esc(a.note||'')+'" placeholder="Dove, con chi, cosa portare" style="min-width:160px"></td>'
+     +'<td><input type="checkbox" style="width:auto" data-ap="'+i+'.fatto" '+(a.fatto?'checked':'')+' aria-label="Fatto"></td>'
+     +'<td><button class="btn sm del" data-delap="'+i+'" aria-label="Elimina appuntamento">×</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty" style="padding-top:0">Nessun appuntamento fissato.</div>';
+  out+='<div class="row" style="margin-top:10px"><button class="btn" id="addAp">Aggiungi appuntamento</button></div></div>';
+  // servizi
+  out+=CATS.map(function(c){return '<datalist id="dl-'+c[0]+'">'+S.listino.filter(function(x){return x.cat===c[0]&&x.nome}).map(function(x){return '<option value="'+esc(x.nome)+'">'}).join('')+'</datalist>'}).join('');
+  out+='<div class="card sect"><h2>Servizi</h2>';
+  out+=w.servizi.map(function(s,i){
+    return '<div class="svc'+(s.attivo?'':' off')+'" data-i="'+i+'">'
+     +'<input type="checkbox" data-sp="'+i+'.attivo" '+(s.attivo?'checked':'')+' aria-label="Incluso: '+esc(svcLabel(s.k))+'">'
+     +'<div class="nm">'+esc(svcLabel(s.k))+'</div>'
+     +'<input data-sp="'+i+'.desc" list="dl-'+catOf(s.k)+'" value="'+esc(s.desc)+'" placeholder="Dal listino o scrivi tu" '+(s.attivo?'':'disabled')+'>'
+     +'<input data-sp="'+i+'.prezzo" inputmode="decimal" value="'+(s.prezzo?esc(String(s.prezzo).replace('.',',')):'')+'" placeholder="Prezzo €" '+(s.attivo?'':'disabled')+'>'
+     +'</div>';
+  }).join('');
+  out+='<p class="hint" style="margin:10px 0 0">Chi lavora al matrimonio, lo stato e i link si gestiscono nella sezione <a href="#team">Team</a>.</p></div>';
+
+  // pagamenti
+  out+='<div class="card sect"><h2>Acconti e pagamenti</h2><div class="scroll"><table><thead><tr><th>Tipo</th><th>Data</th><th>Importo €</th><th>Metodo</th><th>Ricevuto da</th><th>Fattura</th><th></th></tr></thead><tbody>';
+  out+=w.pagamenti.map(function(p,i){
+    return '<tr><td><select data-pp="'+i+'.tipo"><option value="acconto"'+(p.tipo!=='sconto'?' selected':'')+'>Acconto</option><option value="sconto"'+(p.tipo==='sconto'?' selected':'')+'>Sconto</option></select></td>'
+     +'<td><input type="date" data-pp="'+i+'.data" value="'+esc(p.data||'')+'"></td>'
+     +'<td><input inputmode="decimal" data-pp="'+i+'.importo" value="'+(p.importo?esc(String(p.importo).replace('.',',')):'')+'" style="min-width:90px"></td>'
+     +'<td><select data-pp="'+i+'.metodo"><option value=""></option>'+METODI.map(function(m){return '<option'+(p.metodo===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></td>'
+     +'<td><select data-pp="'+i+'.ricevuto"><option value=""></option>'+S.set.team.map(function(m){return '<option'+(p.ricevuto===m?' selected':'')+'>'+esc(m)+'</option>'}).join('')+'</select></td>'
+     +'<td>'+(p.tipo==='sconto'?'<span class="hint">—</span>':'<label class="row" style="text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px;flex-wrap:nowrap;gap:6px"><input type="checkbox" style="width:auto" data-pp="'+i+'.fatturato" '+(p.fatturato?'checked':'')+'>Emessa</label>')+'</td>'
+     +'<td><button class="btn sm del" data-delp="'+i+'" aria-label="Elimina riga">×</button></td></tr>';
+  }).join('');
+  out+='</tbody></table></div><div class="row" style="margin-top:10px"><button class="btn" id="addP">Aggiungi acconto</button></div>';
+  var tot=totale(w),a=acconti(w),sc=sconti(w),sa=tot-a-sc;
+  out+='<div class="row" style="margin-top:14px;gap:10px;align-items:center"><button class="chip'+(w.contanti?' on':'')+'" id="cont">Contanti</button><span class="hint">'+(w.contanti?'Contanti: la dicitura + IVA è tolta dal totale.':'I prezzi sono + IVA. Attiva Contanti per togliere la dicitura + IVA dal totale.')+'</span></div>';
+  out+='<div class="sum" style="margin-top:10px"><div><span>Totale'+(w.contanti?'':' + IVA')+'</span><span>'+eur(tot)+'</span></div><div><span>Acconti versati</span><span>– '+eur(a)+'</span></div>'+(sc>0?'<div><span>Sconto concesso</span><span>– '+eur(sc)+'</span></div>':'')+'<div><span>Saldo</span><span>'+eur(sa)+'</span></div></div></div>';
+  // fatturazione + note
+  out+='<div class="card sect"><h2>Fatturazione e note</h2><div class="f">'+inp('residenza','Residenza fiscale degli sposi','s8','text',w.residenza)+inp('cf','Codice fiscale','s4','text',w.cf)
+   +'<label class="s12">Note<textarea data-p="note">'+esc(w.note)+'</textarea></label></div></div>';
+  // calendario
+  out+='<div class="card sect"><h2>Google Calendar</h2><div class="cal"><b>MATRIMONIO</b><div class="hint" style="margin-top:4px">'+esc(dlong(w.data)||'data da inserire')+' · tutto il giorno · rosso pomodoro</div>'
+   +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Chiesa '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
+   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+(w.calEventId?'Aggiorna evento in Google Calendar':'Crea evento in Google Calendar')+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il PDF va allegato a mano.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
+  return out;
+}
+function bindW(w){
+  var m=$('#main');
+  function changed(rerender){syncFinito(w);S._shown=JSON.stringify(w);persist(w);if(rerender){var y=window.scrollY;m.innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
+  m.querySelectorAll('[data-p]').forEach(function(el){
+    el.addEventListener('input',function(){setp(w,el.dataset.p,el.value);S._shown=JSON.stringify(w);persist(w);if(el.dataset.p==='sposo.nome'||el.dataset.p==='sposa.nome'){var h=$('h1');if(h)h.textContent=nomiSposi(w)}});
+    el.addEventListener('change',function(){if(el.dataset.p==='data'||el.dataset.p==='condivisione')changed(true)});
+  });
+  m.querySelectorAll('[data-sp]').forEach(function(el){
+    el.addEventListener('change',function(){
+      var a=el.dataset.sp.split('.');var s=w.servizi[+a[0]];var f=a[1];
+      if(el.type==='checkbox'){s[f]=el.checked;changed(true);return}
+      if(f==='prezzo'){s[f]=num(el.value);changed(true);return}
+      if(f==='stato'){
+        if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=s.stato;return}
+      }
+      s[f]=el.value;
+      if(f==='desc'){var it=S.listino.filter(function(x){return x.cat===catOf(s.k)&&x.nome===el.value})[0];if(it&&it.prezzo){s.prezzo=num(it.prezzo);changed(true);return}}
+      changed(f==='stato');
+    });
+  });
+  m.querySelectorAll('[data-tm]').forEach(function(b){b.addEventListener('click',function(){var s=w.servizi[+b.dataset.tm];s.team=s.team||[];var n=b.dataset.n,ix=s.team.indexOf(n);if(ix>=0)s.team.splice(ix,1);else s.team.push(n);changed(true)})});
+  m.querySelectorAll('[data-addtm]').forEach(function(b){b.addEventListener('click',function(){
+    var cell=b.parentNode;b.remove();var i=document.createElement('input');i.placeholder='Nome';i.style.width='110px';i.style.padding='3px 8px';cell.appendChild(i);i.focus();
+    var done=false;function ok(){if(done)return;done=true;var n=i.value.trim();if(n){if(S.set.team.indexOf(n)<0){S.set.team.push(n);persistSet()}var s=w.servizi[+b.dataset.addtm];s.team=s.team||[];if(s.team.indexOf(n)<0)s.team.push(n)}changed(true)}
+    i.addEventListener('keydown',function(e){if(e.key==='Enter')ok();if(e.key==='Escape'){done=true;changed(true)}});i.addEventListener('blur',ok)})});
+  m.querySelectorAll('[data-pp]').forEach(function(el){
+    el.addEventListener('change',function(){var a=el.dataset.pp.split('.');var p=w.pagamenti[+a[0]],f=a[1];
+      if(el.type==='checkbox')p[f]=el.checked;else if(f==='importo')p[f]=num(el.value);else p[f]=el.value;
+      changed(f==='importo'||f==='tipo')})});
+  m.querySelectorAll('[data-delp]').forEach(function(b){b.addEventListener('click',function(){w.pagamenti.splice(+b.dataset.delp,1);changed(true)})});
+  m.querySelectorAll('[data-ap]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.ap.split('.');var p=w.appuntamenti[+a[0]];p[a[1]]=el.type==='checkbox'?el.checked:el.value;changed(a[1]==='fatto'||a[1]==='data')})});
+  m.querySelectorAll('[data-delap]').forEach(function(b){b.addEventListener('click',function(){w.appuntamenti.splice(+b.dataset.delap,1);changed(true)})});
+  $('#addAp').addEventListener('click',function(){w.appuntamenti=w.appuntamenti||[];w.appuntamenti.push({tipo:'Visione impaginato',data:'',ora:'',note:'',fatto:false});changed(true)});
+  $('#calBtn').addEventListener('click',async function(){
+    var btn=$('#calBtn'),msg=$('#calMsg');
+    function say(t){msg.textContent=t}
+    if(!w.data){return}
+    btn.disabled=true;say('Creo l\u2019evento…');
+    try{
+      var mcp=await claude.use('mcp');
+      if(!mcp){say('Collegamento Google non disponibile qui: apri il gestionale da claude.ai.');btn.disabled=false;return}
+      var d=parseD(w.data),n=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+      var iso=function(x){return x.getFullYear()+'-'+two(x.getMonth()+1)+'-'+two(x.getDate())+'T00:00:00'};
+      var luogo=[w.chiesa.nome&&'Chiesa '+w.chiesa.nome+(w.chiesa.citta?' ('+w.chiesa.citta+')':''),w.ristorante.nome&&'Ricevimento '+w.ristorante.nome+(w.ristorante.citta?' ('+w.ristorante.citta+')':'')].filter(Boolean);
+      var desc=[w.ora?'Cerimonia ore '+w.ora:'',luogo.join('\n'),'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||''),w.email?'Mail: '+w.email:'',attivi(w).map(function(x){return svcLabel(x.k)+(x.desc?' – '+x.desc:'')}).join(', ')].filter(Boolean).join('\n');
+      var inp={calendarId:S.set.calendarId||'weddingfotopier@gmail.com',summary:'MATRIMONIO '+nomiSposi(w),startTime:iso(d),endTime:iso(n),allDay:true,colorId:'11',description:desc,location:luogo[0]?String(luogo[0]).replace(/^Chiesa /,''):undefined,notificationLevel:'NONE'};
+      if(!inp.location)delete inp.location;
+      var upd=!!w.calEventId;
+      if(upd)inp.eventId=w.calEventId;
+      var res=await mcp.callTool('Google Calendar',upd?'update_event':'create_event',inp);
+      var p=res&&res.payload;if(typeof p==='string'){try{p=JSON.parse(p)}catch(e){p=null}}
+      var ev=p&&(p.event||p);
+      var id=(ev&&(ev.id||ev.eventId))||w.calEventId;
+      if(id){w.calEventId=id}
+      if(ev&&ev.htmlLink&&/^https:\/\//.test(ev.htmlLink))w.calEventLink=ev.htmlLink;
+      persist(w);m.innerHTML=viewW(w);bindW(w);toast(upd?'Evento aggiornato':'Evento creato in Google Calendar');
+    }catch(e){
+      btn.disabled=false;var c=e&&e.code;
+      if(c==='approval_required'||c==='consent_required'||c==='not_in_manifest')say('Serve il tuo permesso: conferma la richiesta di Google Calendar quando compare.');
+      else if(c==='needs_reauth'||c==='server_not_connected')say('Google Calendar non è collegato: ricollegalo in claude.ai, Impostazioni, Connettori.');
+      else if(c==='tool_error')say('Google ha rifiutato: '+String((e.message||'').slice(0,140))+' (controlla di avere i permessi di modifica sul calendario).');
+      else say('Non riuscito ('+(c||'errore')+'). Riprova tra poco.');
+    }
+  });
+  $('#cont').addEventListener('click',function(){w.contanti=!w.contanti;if(!w.contanti)delete w.contanti;changed(true)});
+  $('#addP').addEventListener('click',function(){w.pagamenti.push({tipo:'acconto',data:todayStr(),importo:0,metodo:'',ricevuto:'',fatturato:false});changed(true)});
+  $('#pdf').addEventListener('click',function(){makePdf(w)});
+  $('#delW').addEventListener('click',function(){
+    var b=$('#delW');if(!b.dataset.sure){b.dataset.sure='1';b.textContent='Conferma eliminazione';setTimeout(function(){if(b){b.textContent='Elimina';delete b.dataset.sure}},4000);return}
+    S.weddings=S.weddings.filter(function(x){return x.id!==w.id});
+    if(S.db)S.db.doc('matrimoni/'+w.id).delete().catch(function(){toast('Eliminazione non riuscita')});
+    location.hash='matrimoni';toast('Matrimonio eliminato');
+  });
+}
+function nuovo(){
+  var anno=new Date().getFullYear();var mx=0;
+  S.weddings.forEach(function(w){if(w.anno===anno&&w.numero>mx)mx=w.numero});
+  var w=emptyWedding(anno,mx+1);S.weddings.push(w);sortW();persist(w);
+  location.hash='matrimonio-'+w.id;
+}
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('#newTop');if(a){e.preventDefault();nuovo()}});
+
+/* ---------- impostazioni ---------- */
+function viewSet(){
+  var s=S.set;
+  return '<div class="top"><div><h1>Impostazioni</h1><p class="sub">Dati che compaiono nel contratto</p></div></div>'
+   +'<div class="card sect"><h2>Titolare e recapiti</h2><div class="f">'
+   +setf('titolare','Titolare','s6')+setf('piva','Partita IVA','s6')+setf('indirizzo','Indirizzo','s12')+setf('tel','Telefoni','s6')+setf('web','Sito e mail','s6')+setf('calendarId','Calendario Google per i matrimoni','s12')+'</div></div>'
+   +'<div class="card sect"><h2>Pagamenti</h2><div class="f">'+setf('iban','IBAN','s8')+setf('intestatario','Intestatario','s4')+setf('mailBonifico','Mail per la copia del bonifico','s6')+'</div></div>'
+   +'<div class="card sect"><h2>Team</h2><div class="team" id="teamList">'+s.team.map(function(t,i){return '<span class="chip on">'+esc(t)+' <button data-rm="'+i+'" style="background:none;border:0;cursor:pointer;color:inherit" aria-label="Rimuovi '+esc(t)+'">×</button></span>'}).join('')+'</div>'
+   +'<div class="row" style="margin-top:12px"><input id="newMember" placeholder="Nuovo fotografo o videomaker" style="max-width:260px"><button class="btn" id="addMember">Aggiungi</button></div></div>'
+   +'<div class="card"><h2>Archivio</h2><p class="hint" style="margin:0 0 10px">Esporta tutti i matrimoni in un file CSV.</p><button class="btn" id="csv">Scarica elenco CSV</button></div>';
+}
+function setf(k,l,c){return '<label class="'+c+'">'+esc(l)+'<input data-set="'+k+'" value="'+esc(S.set[k])+'"></label>'}
+function bindSet(){
+  document.querySelectorAll('[data-set]').forEach(function(el){el.addEventListener('change',function(){S.set[el.dataset.set]=el.value;persistSet();toast('Salvato')})});
+  document.querySelectorAll('[data-rm]').forEach(function(b){b.addEventListener('click',function(){S.set.team.splice(+b.dataset.rm,1);persistSet();$('#main').innerHTML=viewSet();bindSet()})});
+  $('#addMember').addEventListener('click',function(){var v=$('#newMember').value.trim();if(!v)return;if(S.set.team.indexOf(v)<0)S.set.team.push(v);persistSet();$('#main').innerHTML=viewSet();bindSet()});
+  $('#csv').addEventListener('click',function(){
+    var rows=[['Pratica','Data','Sposo','Sposa','Chiesa','Ristorante','Totale','Acconti','Sconti','Saldo','Stato']];
+    S.weddings.forEach(function(w){rows.push([w.id,w.data,w.sposo.nome,w.sposa.nome,w.chiesa.nome,w.ristorante.nome,totale(w),acconti(w),sconti(w),saldo(w),statoW(w).t])});
+    var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
+    save('matrimoni.csv',txt);
+  });
+}
+async function save(name,data){
+  try{var d=await claude.use('downloads');if(!d){toast('Download non disponibile in questa vista');return}await d.save({filename:name,data:data});toast('File salvato')}
+  catch(e){if(e&&e.code==='declined')return;toast('Download non riuscito')}
+}
+
+/* ---------- contratto PDF (fronte e retro) ---------- */
+var CLAUSOLE=[
+['1. Titolare del trattamento','Il titolare è {titolare}, ditta individuale, partita IVA {piva}, domicilio fiscale in Via Colombaia 6/S, 25050 Rodengo Saiano (BS). Sede operativa: Foto Pier, {sede}. Per ogni richiesta sulla privacy: info@fotopier.com.'],
+['2. Dati trattati e finalità','Trattiamo i dati degli sposi (nome, recapiti, dati per la fatturazione) e le immagini e i video realizzati durante l’evento, anche degli ospiti presenti. I dati servono a eseguire il contratto, realizzare e consegnare i lavori, gestire i pagamenti e adempiere agli obblighi fiscali e di legge. Non vengono ceduti a terzi.'],
+['3. Ospiti dell’evento','Gli sposi informano gli invitati che durante l’evento sono presenti fotografi e videomaker incaricati di documentarlo.'],
+['4. Conservazione','I materiali grezzi (file originali) sono cancellati trascorso un anno dalla data del matrimonio. I lavori definitivi, cioè le foto consegnate e i video montati, restano in archivio per cinque anni. I dati fiscali e contabili sono conservati per i termini di legge.'],
+['5. Collaboratori e fornitori esterni','Per realizzare il servizio possiamo avvalerci di collaboratori (altri fotografi, videomaker, montatori) e di fornitori tecnici (archiviazione cloud, stampa degli album, invio dei file). Trattiamo i dati solo per le finalità del servizio, secondo le nostre istruzioni e con obbligo di riservatezza.'],
+['6. Diritti dell’interessato','In ogni momento si può chiedere accesso, rettifica, cancellazione, limitazione od opposizione al trattamento scrivendo a info@fotopier.com. È possibile inoltre presentare reclamo al Garante per la protezione dei dati personali (www.garanteprivacy.it). Il testo completo dell’informativa è su www.fotopier.com.'],
+['7. Consenso all’uso promozionale delle immagini','Gli sposi possono autorizzare l’uso di estratti del lavoro (foto e video) sul sito, sui social e su materiale promozionale del titolare. Il consenso è facoltativo, separato dal contratto e non condiziona il servizio. Si può revocare in ogni momento scrivendo a info@fotopier.com; la revoca vale per gli usi futuri.']];
+var RECESSO=['8. Recesso e annullamento dell’evento','Se gli sposi annullano il servizio meno di tre mesi prima della data del matrimonio, sono tenuti a corrispondere al fotografo il 50% del corrispettivo pattuito, a titolo di penale. Se l’annullamento avviene con più di tre mesi di anticipo, resta dovuto quanto già versato come acconto. La penale non si applica in caso di gravi e documentati motivi di forza maggiore, come lutto in famiglia stretta, grave malattia o infortunio degli sposi o dei loro familiari stretti. In caso di rinvio dell’evento, le parti concordano una nuova data, compatibilmente con la disponibilità del fotografo.'];
+
+async function makePdf(w){
+  if(!window.PDFLib){toast('Libreria PDF non caricata, riprova tra un attimo');return}
+  try{
+    var P=PDFLib,doc=await P.PDFDocument.create();
+    var R=await doc.embedFont(P.StandardFonts.Helvetica),B=await doc.embedFont(P.StandardFonts.HelveticaBold);
+    var W=595.28,H=841.89,M=42,CW=W-2*M;
+    var ink=P.rgb(.1,.1,.1),mut=P.rgb(.42,.42,.4),line=P.rgb(.79,.79,.78),pale=P.rgb(.953,.953,.945),acc=P.rgb(.184,.561,.306),white=P.rgb(1,1,1);
+    var pg;
+    function cl(s){return String(s==null?'':s).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[^ -~ -ÿ€–—•·]/g,'?')}
+    function T(x,top,s,o){o=o||{};var f=o.b?B:R,z=o.z||8.5;s=cl(s);if(o.al==='r')x-=f.widthOfTextAtSize(s,z);if(o.al==='c')x-=f.widthOfTextAtSize(s,z)/2;pg.drawText(s,{x:x,y:H-top-z*.8,size:z,font:f,color:o.c||ink})}
+    function wrap(s,wd,z,f){var out=[],words=cl(s).split(/\s+/),cur='';words.forEach(function(wd2){var t=cur?cur+' '+wd2:wd2;if(f.widthOfTextAtSize(t,z)>wd&&cur){out.push(cur);cur=wd2}else cur=t});if(cur)out.push(cur);return out}
+    function box(x,top,wd,h,fill){pg.drawRectangle({x:x,y:H-top-h,width:wd,height:h,borderColor:line,borderWidth:.6,color:fill})}
+    function hl(x1,x2,top,th,c){pg.drawLine({start:{x:x1,y:H-top},end:{x:x2,y:H-top},thickness:th||.6,color:c||ink})}
+    function field(x,top,wd,label,val,h,lc){h=h||24;T(x+1,top,label.toUpperCase(),{b:1,z:lc?6.5:5.6,c:lc||mut});box(x,top+7,wd,h-7);T(x+6,top+11.5,val||'',{z:9})}
+    var s=S.set;
+    // FRONTE
+    pg=doc.addPage([W,H]);
+    T(M,44,'FOTO PIER',{b:1,z:30});T(M,80,'Contratto di servizio · matrimonio',{z:9,c:mut});
+    T(W-M,42,s.indirizzo,{z:7.5,c:mut,al:'r'});T(W-M,54,s.tel,{z:7.5,c:mut,al:'r'});T(W-M,66,s.web,{z:7.5,c:mut,al:'r'});T(W-M,78,s.titolare+' · P.IVA '+s.piva,{z:7.5,c:mut,al:'r'});
+    hl(M,W-M,92,1.2);
+    var y=104;
+    T(M,y,'DATA DEL MATRIMONIO',{b:1,z:6.5,c:acc});T(M,y+12,w.data?dlong(w.data):'Data da definire',{b:1,z:27});
+    T(W-M-110,y,'ORE',{b:1,z:6.5,c:acc});T(W-M-110,y+12,(w.ora||'—').replace(':',','),{b:1,z:27});
+    pg.drawLine({start:{x:W-M-124,y:H-(y+2)},end:{x:W-M-124,y:H-(y+44)},thickness:.6,color:line});
+    T(M,y+48,'Contratto del '+dshort(w.contrattoData),{z:7.5,c:mut});
+    y+=64;
+    function pair(title,p){T(M,y,title,{b:1,z:7,c:acc});y+=10;field(M,y,CW*.6,'Nome',p.nome);field(M+CW*.6,y,CW*.4,'Telefono',p.tel);field(M,y+27,CW*.6,'Via',p.via);field(M+CW*.6,y+27,CW*.3,'Città',p.citta);field(M+CW*.9,y+27,CW*.1,'Prov',p.prov);y+=57}
+    pair('SPOSO',w.sposo);pair('SPOSA',w.sposa);
+    field(M,y,CW*.48,'Cerimonia',[w.chiesa.nome,w.chiesa.citta].filter(Boolean).join(' · ')+(w.chiesa.prov?' ('+w.chiesa.prov+')':''),24,acc);
+    field(M+CW*.52,y,CW*.48,'Ricevimento',[w.ristorante.nome,w.ristorante.citta].filter(Boolean).join(' · ')+(w.ristorante.prov?' ('+w.ristorante.prov+')':''),24,acc);
+    y+=28;field(M,y,CW,'Social e mail',w.email,24,acc);y+=36;
+    T(M,y,'SERVIZI',{b:1,z:7,c:acc});y+=10;
+    var rows=w.servizi.filter(function(x){return x.attivo});
+    if(!rows.length)rows=[{k:'foto',desc:'',prezzo:0}];
+    rows.forEach(function(r,i){box(M,y,CW,18,i%2===0?pale:undefined);T(M+8,y+5.5,svcLabel(r.k),{b:1,z:8.5});T(M+150,y+5.5,r.desc||'',{z:8.5});if(num(r.prezzo)>0)T(W-M-8,y+5.5,eur(num(r.prezzo)),{z:9,al:'r'});y+=18});
+    y+=10;
+    // acconti
+    T(M,y,'ACCONTI E PAGAMENTI',{b:1,z:7,c:acc});y+=10;
+    var cols=[['Tipo',.27],['Data',.14],['Importo',.15],['Metodo di pagamento',.23],['Ricevuto da',.21]];
+    var x=M;cols.forEach(function(c){box(x,y,CW*c[1],18,pale);T(x+6,y+6,c[0].toUpperCase(),{b:1,z:6,c:mut});x+=CW*c[1]});y+=18;
+    var pr=w.pagamenti.slice(0,5);while(pr.length<3)pr.push(null);
+    pr.forEach(function(p){var vals=p?[p.tipo==='sconto'?'Sconto':'Acconto',dshort(p.data),num(p.importo)?eur(num(p.importo)):'',p.metodo||'',p.ricevuto||'']:['','','','',''];x=M;cols.forEach(function(c,i){box(x,y,CW*c[1],19);T(x+6,y+5.5,vals[i],{z:8.5});x+=CW*c[1]});y+=19});
+    y+=12;
+    var bx=M+CW*.52,bw=CW*.48,tot=totale(w),ac=acconti(w),sc=sconti(w),sa=tot-ac-sc,sumTop=y;
+    box(bx,y,bw,22,pale);T(bx+8,y+7,w.contanti?'TOTALE':'TOTALE + IVA',{b:1,z:9});T(bx+bw-8,y+6,eur(tot),{b:1,z:10,al:'r'});y+=22;
+    if(ac>0||sc===0){box(bx,y,bw,18);T(bx+8,y+5.5,'Acconti',{z:8.5});T(bx+bw-8,y+5,'– '+eur(ac),{z:9,al:'r'});y+=18}
+    if(sc>0){box(bx,y,bw,18);T(bx+8,y+5.5,'Sconto',{z:8.5});T(bx+bw-8,y+5,'– '+eur(sc),{z:9,al:'r'});y+=18}
+    pg.drawRectangle({x:bx,y:H-y-24,width:bw,height:24,color:ink});T(bx+8,y+8,'SALDO',{b:1,z:10,c:white});T(bx+bw-8,y+6.5,eur(sa),{b:1,z:12,c:white,al:'r'});
+    T(M,sumTop,'COORDINATE PER IL BONIFICO',{b:1,z:7,c:acc});T(M,sumTop+14,'IBAN '+s.iban,{b:1,z:8});T(M,sumTop+26,'Intestatario: '+s.intestatario,{z:8});T(M,sumTop+38,'Inviare copia del bonifico a '+s.mailBonifico,{z:7.5,c:mut});
+    y+=24+14;
+    T(M,y,'Residenza fiscale degli sposi (per la fattura)',{b:1,z:7,c:mut});box(M,y+10,CW,18);T(M+6,y+15,w.residenza||'',{z:8.5});
+    T(M,y+38,'Codice fiscale',{b:1,z:7,c:mut});box(M,y+48,CW,18);T(M+6,y+53,w.cf||'',{z:8.5});
+    y+=72;box(M,y,CW,22);T(M+6,y+7,w.note?'Note: '+w.note:'Note:',{z:8.5});
+    // RETRO
+    pg=doc.addPage([W,H]);
+    T(W/2,40,'FOTO PIER',{b:1,z:17,al:'c'});T(W/2,64,'Informativa privacy e condizioni del servizio foto e video matrimonio',{z:8,c:mut,al:'c'});
+    hl(M,W-M,82,.8,line);
+    y=100;
+    var sede=(s.indirizzo||'').replace(/\s*·\s*/g,', ');
+    function para(t,fs){wrap(t,CW,fs||8.3,R).forEach(function(l){T(M,y,l,{z:fs||8.3});y+=11.6})}
+    CLAUSOLE.forEach(function(c){T(M,y,c[0],{b:1,z:9});y+=13;para(c[1].replace('{titolare}',s.titolare).replace('{piva}',s.piva).replace('{sede}',sede));y+=8});
+    var half=CW/2;box(M,y-2,half,24,pale);box(M+half,y-2,half,24,pale);
+    var cs=w.condivisione;
+    T(M+8,y+6,(cs==='si'?'[X]':'[   ]')+'  DO IL CONSENSO',{b:1,z:8.5});T(M+half+8,y+6,(cs==='no'?'[X]':'[   ]')+'  NON DO IL CONSENSO',{b:1,z:8.5});
+    y+=42;
+    T(M,y,'Firma sposo ______________________',{z:8.5});T(M+half+10,y,'Firma sposa ______________________',{z:8.5});y+=26;
+    T(M,y,RECESSO[0],{b:1,z:9});y+=13;para(RECESSO[1]);y+=40;
+    var x2=M+CW/2+10,hw=CW/2-10;
+    hl(M,M+hw,y);hl(x2,W-M,y);T(M,y+4,'Firma sposo',{z:7.5,c:mut});T(x2,y+4,'Firma sposa',{z:7.5,c:mut});y+=54;
+    T(M,y-8,'Luogo e data ________________________',{z:8.5});hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
+    var bytes=await doc.save();
+    var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
+    await save(nome,bytes);
+  }catch(e){toast('Creazione PDF non riuscita')}
+}
+
+/* ---------- avvio ---------- */
+function start(){
+  route();
+  var timer=setTimeout(function(){if(!S.loaded){S.loaded=true;refresh()}},10000);
+  claude.use('db').then(function(db){
+    if(!db){nav();return}
+    S.db=db;nav();
+    db.collection('matrimoni').onSnapshot(function(snap){
+      clearTimeout(timer);S.loaded=true;if(!snap.metadata.fromCache)S.live=true;
+      S.weddings=snap.docs.map(function(d){return d.data()});sortW();refresh();
+    },function(){nav()});
+    db.doc('impostazioni/listino').onSnapshot(function(d){if(d.exists&&Array.isArray(d.data().voci)){S.listino=d.data().voci;if(S.route==='listino'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route()}},function(){});
+    db.doc('impostazioni/studio').onSnapshot(function(d){if(d.exists){var prev=S.set;S.set=Object.assign({},DEFAULT_SET,d.data());S.set.team=(S.set.team||[]).slice();(prev.team||[]).forEach(function(n){if(S.set.team.indexOf(n)<0)S.set.team.push(n)});S.set.teamMail=Object.assign({},(prev.teamMail||{}),(d.data().teamMail||{}));if(S.route==='impostazioni'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route();else if(S.route==='team')refresh()}},function(){});
+  }).catch(function(){nav()});
+}
+if(window.claude&&claude.use)start();else{route()}
+})();
+</script>
+</body>
+</html>

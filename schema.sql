@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS docs (
+  path TEXT PRIMARY KEY,
+  data TEXT NOT NULL,
+  updated INTEGER NOT NULL
+);
