@@ -591,7 +591,7 @@ function viewAdm(){
    +CATS.map(function(x){var d=D.c[x[0]],net=d.tot-d.sco,r=net-d.inc,pc=net>0?Math.min(100,Math.round(d.inc/net*100)):0;
      return '<tr><td><b>'+x[1]+'</b></td><td class="r">'+eur(net)+'</td><td class="r">'+eur(d.inc)+'</td><td class="r"><b>'+eur(r)+'</b></td><td><div style="height:8px;border-radius:4px;background:var(--pale);overflow:hidden"><div style="height:100%;width:'+pc+'%;background:var(--accent)"></div></div></td></tr>'}).join('')
    +'<tr><td><b>Totale</b></td><td class="r"><b>'+eur(T.tot-T.sco)+'</b></td><td class="r"><b>'+eur(T.inc)+'</b></td><td class="r"><b>'+eur(rest)+'</b></td><td></td></tr></tbody></table></div>'
-   +'<p class="hint" style="margin:10px 0 0">Gli acconti non sono legati a un servizio: sono ripartiti tra le categorie in proporzione al prezzo. “Extra” comprende Casa sposo.</p></div>';
+   +'<p class="hint" style="margin:10px 0 0">La caparra confirmatoria non è legata a un servizio: sono ripartiti tra le categorie in proporzione al prezzo. “Extra” comprende Casa sposo.</p></div>';
   var open=list.filter(function(w){return saldo(w)>0.005&&attivi(w).length}).sort(function(a,b){return (a.data||'').localeCompare(b.data||'')});
   out+='<div class="grid two"><div class="card"><h2>Da incassare, matrimonio per matrimonio</h2>'+(open.length?'<div class="scroll"><table><tbody>'+open.map(function(w){return '<tr class="click" data-id="'+esc(w.id)+'"><td><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dshort(w.data))+'</div></td><td class="r"><span class="pill warn">'+eur(saldo(w))+'</span></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty">Tutti i saldi sono incassati.</div>')+'</div>';
   var nf=[];list.forEach(function(w){(w.pagamenti||[]).forEach(function(p){if(p.tipo!=='sconto'&&num(p.importo)>0&&!p.fatturato)nf.push({w:w,p:p})})});
@@ -693,9 +693,9 @@ function viewW(w){
   out+='<p class="hint" style="margin:10px 0 0">Chi lavora al matrimonio, lo stato e i link si gestiscono nella sezione <a href="#team">Team</a>.</p></div>';
 
   // pagamenti
-  out+='<div class="card sect"><h2>Acconti e pagamenti</h2><div class="scroll"><table><thead><tr><th>Tipo</th><th>Data</th><th>Importo €</th><th>Metodo</th><th>Ricevuto da</th><th>Fattura</th><th></th></tr></thead><tbody>';
+  out+='<div class="card sect"><h2>Caparra confirmatoria e pagamenti</h2><div class="scroll"><table><thead><tr><th>Tipo</th><th>Data</th><th>Importo €</th><th>Metodo</th><th>Ricevuto da</th><th>Fattura</th><th></th></tr></thead><tbody>';
   out+=w.pagamenti.map(function(p,i){
-    return '<tr><td><select data-pp="'+i+'.tipo"><option value="acconto"'+(p.tipo!=='sconto'?' selected':'')+'>Acconto</option><option value="sconto"'+(p.tipo==='sconto'?' selected':'')+'>Sconto</option></select></td>'
+    return '<tr><td><select data-pp="'+i+'.tipo"><option value="acconto"'+(p.tipo!=='sconto'?' selected':'')+'>Caparra confirmatoria</option><option value="sconto"'+(p.tipo==='sconto'?' selected':'')+'>Sconto</option></select></td>'
      +'<td><input type="date" data-pp="'+i+'.data" value="'+esc(p.data||'')+'"></td>'
      +'<td><input inputmode="decimal" data-pp="'+i+'.importo" value="'+(p.importo?esc(String(p.importo).replace('.',',')):'')+'" style="min-width:90px"></td>'
      +'<td><select data-pp="'+i+'.metodo"><option value=""></option>'+METODI.map(function(m){return '<option'+(p.metodo===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></td>'
@@ -703,10 +703,10 @@ function viewW(w){
      +'<td>'+(p.tipo==='sconto'?'<span class="hint">—</span>':'<label class="row" style="text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px;flex-wrap:nowrap;gap:6px"><input type="checkbox" style="width:auto" data-pp="'+i+'.fatturato" '+(p.fatturato?'checked':'')+'>Emessa</label>')+'</td>'
      +'<td><button class="btn sm del" data-delp="'+i+'" aria-label="Elimina riga">×</button></td></tr>';
   }).join('');
-  out+='</tbody></table></div><div class="row" style="margin-top:10px"><button class="btn" id="addP">Aggiungi acconto</button></div>';
+  out+='</tbody></table></div><div class="row" style="margin-top:10px"><button class="btn" id="addP">Aggiungi caparra confirmatoria</button></div>';
   var tot=totale(w),a=acconti(w),sc=sconti(w),sa=tot-a-sc;
   out+='<div class="row" style="margin-top:14px;gap:10px;align-items:center"><button class="chip'+(w.contanti?' on':'')+'" id="cont">Contanti</button><span class="hint">'+(w.contanti?'Contanti: la dicitura + IVA è tolta dal totale.':'I prezzi sono + IVA. Attiva Contanti per togliere la dicitura + IVA dal totale.')+'</span></div>';
-  out+='<div class="sum" style="margin-top:10px"><div><span>Totale'+(w.contanti?'':' + IVA')+'</span><span>'+eur(tot)+'</span></div><div><span>Acconti versati</span><span>– '+eur(a)+'</span></div>'+(sc>0?'<div><span>Sconto concesso</span><span>– '+eur(sc)+'</span></div>':'')+'<div><span>Saldo</span><span>'+eur(sa)+'</span></div></div></div>';
+  out+='<div class="sum" style="margin-top:10px"><div><span>Totale'+(w.contanti?'':' + IVA')+'</span><span>'+eur(tot)+'</span></div><div><span>Caparra confirmatoria versata</span><span>– '+eur(a)+'</span></div>'+(sc>0?'<div><span>Sconto concesso</span><span>– '+eur(sc)+'</span></div>':'')+'<div><span>Saldo</span><span>'+eur(sa)+'</span></div></div></div>';
   // fatturazione + note
   out+='<div class="card sect"><h2>Fatturazione e note</h2><div class="f">'+inp('residenza','Residenza fiscale degli sposi','s8','text',w.residenza)+inp('cf','Codice fiscale','s4','text',w.cf)
    +'<label class="s12">Note<textarea data-p="note">'+esc(w.note)+'</textarea></label></div></div>';
@@ -817,7 +817,7 @@ function bindSet(){
   document.querySelectorAll('[data-rm]').forEach(function(b){b.addEventListener('click',function(){S.set.team.splice(+b.dataset.rm,1);persistSet();$('#main').innerHTML=viewSet();bindSet()})});
   $('#addMember').addEventListener('click',function(){var v=$('#newMember').value.trim();if(!v)return;if(S.set.team.indexOf(v)<0)S.set.team.push(v);persistSet();$('#main').innerHTML=viewSet();bindSet()});
   $('#csv').addEventListener('click',function(){
-    var rows=[['Pratica','Data','Sposo','Sposa','Chiesa','Ristorante','Totale','Acconti','Sconti','Saldo','Stato']];
+    var rows=[['Pratica','Data','Sposo','Sposa','Chiesa','Ristorante','Totale','Caparra confirmatoria','Sconti','Saldo','Stato']];
     S.weddings.forEach(function(w){rows.push([lab(w),w.data,w.sposo.nome,w.sposa.nome,w.chiesa.nome,w.ristorante.nome,totale(w),acconti(w),sconti(w),saldo(w),statoW(w).t])});
     var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
     save('matrimoni.csv',txt);
@@ -837,7 +837,7 @@ var CLAUSOLE=[
 ['5. Collaboratori e fornitori esterni','Per realizzare il servizio possiamo avvalerci di collaboratori (altri fotografi, videomaker, montatori) e di fornitori tecnici (archiviazione cloud, stampa degli album, invio dei file). Trattiamo i dati solo per le finalità del servizio, secondo le nostre istruzioni e con obbligo di riservatezza.'],
 ['6. Diritti dell’interessato','In ogni momento si può chiedere accesso, rettifica, cancellazione, limitazione od opposizione al trattamento scrivendo a info@fotopier.com. È possibile inoltre presentare reclamo al Garante per la protezione dei dati personali (www.garanteprivacy.it). Il testo completo dell’informativa è su www.fotopier.com.'],
 ['7. Consenso all’uso promozionale delle immagini','Gli sposi possono autorizzare l’uso di estratti del lavoro (foto e video) sul sito, sui social e su materiale promozionale del titolare. Il consenso è facoltativo, separato dal contratto e non condiziona il servizio. Si può revocare in ogni momento scrivendo a info@fotopier.com; la revoca vale per gli usi futuri.']];
-var RECESSO=['8. Recesso e annullamento dell’evento','Se gli sposi annullano il servizio meno di tre mesi prima della data del matrimonio, sono tenuti a corrispondere al fotografo il 50% del corrispettivo pattuito, a titolo di penale. Se l’annullamento avviene con più di tre mesi di anticipo, resta dovuto quanto già versato come acconto. La penale non si applica in caso di gravi e documentati motivi di forza maggiore, come lutto in famiglia stretta, grave malattia o infortunio degli sposi o dei loro familiari stretti. In caso di rinvio dell’evento, le parti concordano una nuova data, compatibilmente con la disponibilità del fotografo.'];
+var RECESSO=['8. Recesso e annullamento dell’evento','Se gli sposi annullano il servizio meno di tre mesi prima della data del matrimonio, sono tenuti a corrispondere al fotografo il 50% del corrispettivo pattuito, a titolo di penale. Se l’annullamento avviene con più di tre mesi di anticipo, resta dovuta la caparra confirmatoria già versata. La penale non si applica in caso di gravi e documentati motivi di forza maggiore, come lutto in famiglia stretta, grave malattia o infortunio degli sposi o dei loro familiari stretti. In caso di rinvio dell’evento, le parti concordano una nuova data, compatibilmente con la disponibilità del fotografo.'];
 
 async function makePdf(w){
   if(!window.PDFLib){toast('Libreria PDF non caricata, riprova tra un attimo');return}
@@ -876,15 +876,15 @@ async function makePdf(w){
     rows.forEach(function(r,i){box(M,y,CW,18,i%2===0?pale:undefined);T(M+8,y+5.5,svcLabel(r.k),{b:1,z:8.5});T(M+150,y+5.5,r.desc||'',{z:8.5});if(num(r.prezzo)>0)T(W-M-8,y+5.5,eur(num(r.prezzo)),{z:9,al:'r'});y+=18});
     y+=10;
     // acconti
-    T(M,y,'ACCONTI E PAGAMENTI',{b:1,z:7,c:acc});y+=10;
+    T(M,y,'CAPARRA CONFIRMATORIA',{b:1,z:7,c:acc});y+=10;
     var cols=[['Tipo',.27],['Data',.14],['Importo',.15],['Metodo di pagamento',.23],['Ricevuto da',.21]];
     var x=M;cols.forEach(function(c){box(x,y,CW*c[1],18,pale);T(x+6,y+6,c[0].toUpperCase(),{b:1,z:6,c:mut});x+=CW*c[1]});y+=18;
     var pr=w.pagamenti.slice(0,5);while(pr.length<3)pr.push(null);
-    pr.forEach(function(p){var vals=p?[p.tipo==='sconto'?'Sconto':'Acconto',dshort(p.data),num(p.importo)?eur(num(p.importo)):'',p.metodo||'',p.ricevuto||'']:['','','','',''];x=M;cols.forEach(function(c,i){box(x,y,CW*c[1],19);T(x+6,y+5.5,vals[i],{z:8.5});x+=CW*c[1]});y+=19});
+    pr.forEach(function(p){var vals=p?[p.tipo==='sconto'?'Sconto':'Caparra',dshort(p.data),num(p.importo)?eur(num(p.importo)):'',p.metodo||'',p.ricevuto||'']:['','','','',''];x=M;cols.forEach(function(c,i){box(x,y,CW*c[1],19);T(x+6,y+5.5,vals[i],{z:8.5});x+=CW*c[1]});y+=19});
     y+=12;
     var bx=M+CW*.52,bw=CW*.48,tot=totale(w),ac=acconti(w),sc=sconti(w),sa=tot-ac-sc,sumTop=y;
     box(bx,y,bw,22,pale);T(bx+8,y+7,w.contanti?'TOTALE':'TOTALE + IVA',{b:1,z:9});T(bx+bw-8,y+6,eur(tot),{b:1,z:10,al:'r'});y+=22;
-    if(ac>0||sc===0){box(bx,y,bw,18);T(bx+8,y+5.5,'Acconti',{z:8.5});T(bx+bw-8,y+5,'– '+eur(ac),{z:9,al:'r'});y+=18}
+    if(ac>0||sc===0){box(bx,y,bw,18);T(bx+8,y+5.5,'Caparra confirmatoria',{z:8.5});T(bx+bw-8,y+5,'– '+eur(ac),{z:9,al:'r'});y+=18}
     if(sc>0){box(bx,y,bw,18);T(bx+8,y+5.5,'Sconto',{z:8.5});T(bx+bw-8,y+5,'– '+eur(sc),{z:9,al:'r'});y+=18}
     pg.drawRectangle({x:bx,y:H-y-24,width:bw,height:24,color:ink});T(bx+8,y+8,'SALDO',{b:1,z:10,c:white});T(bx+bw-8,y+6.5,eur(sa),{b:1,z:12,c:white,al:'r'});
     T(M,sumTop,'COORDINATE PER IL BONIFICO',{b:1,z:7,c:acc});T(M,sumTop+14,'IBAN '+s.iban,{b:1,z:8});T(M,sumTop+26,'Intestatario: '+s.intestatario,{z:8});T(M,sumTop+38,'Inviare copia del bonifico a '+s.mailBonifico,{z:7.5,c:mut});
