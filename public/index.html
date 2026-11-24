@@ -327,6 +327,7 @@ function renumber(except){
     })})
 }
 function persist(w){
+  if(S.bozza&&w===S.bozza)return;
   renumber(w);sortW();
   if(!S.db){return}
   clearTimeout(saveTimers[w.id]);
@@ -335,7 +336,7 @@ function persist(w){
   },500);
 }
 function persistSet(){if(S.db){S.db.doc('impostazioni/studio').set(JSON.parse(JSON.stringify(S.set))).catch(function(){toast('Impostazioni non salvate')})}}
-function byId(id){for(var i=0;i<S.weddings.length;i++)if(S.weddings[i].id===id)return S.weddings[i];return null}
+function byId(id){if(S.bozza&&S.bozza.id===id)return S.bozza;for(var i=0;i<S.weddings.length;i++)if(S.weddings[i].id===id)return S.weddings[i];return null}
 function conf(){return S.weddings.filter(function(w){return !w.attesa})}
 function sortW(){S.weddings.sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')})}
 
@@ -349,6 +350,7 @@ function nav(){
 }
 function route(){
   var h=(location.hash||'#dashboard').slice(1);S.route=h;nav();
+  if(S.bozza&&h!=='matrimonio-'+S.bozza.id)S.bozza=null;
   var m=$('#main');
   if(h==='dashboard'){m.innerHTML=viewDash();bindDash()}
   else if(h==='matrimoni'){m.innerHTML=viewList();bindList()}
@@ -824,7 +826,8 @@ function viewW(w){
   S._shown=JSON.stringify(w);
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
-   +'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>';
+   +(w===S.bozza?'<div class="row"><button class="btn pri" id="okBozza" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Conferma e salva contratto</button><button class="btn" id="noBozza">Annulla</button></div></div><div class="card" style="border-color:#e0b100;margin-bottom:14px"><b>Bozza non ancora salvata.</b> <span class="hint">Il contratto viene creato solo quando premi "Conferma e salva contratto". Se esci, non viene salvato nulla.</span></div>'
+   :'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
@@ -940,6 +943,13 @@ function bindW(w){
   });
   $('#cont').addEventListener('click',function(){w.contanti=!w.contanti;if(!w.contanti)delete w.contanti;changed(true)});
   $('#addP').addEventListener('click',function(){w.pagamenti.push({tipo:'acconto',data:todayStr(),importo:0,metodo:'',ricevuto:'',fatturato:false});changed(true)});
+  if(w===S.bozza){
+    $('#okBozza').addEventListener('click',function(){
+      if(!((w.sposo.nome||'').trim()||(w.sposa.nome||'').trim())){toast('Inserisci almeno il nome di uno dei due sposi');return}
+      S.bozza=null;S.weddings.push(w);persist(w);toast('Contratto salvato');route()});
+    $('#noBozza').addEventListener('click',function(){S.bozza=null;location.hash='matrimoni'});
+    return;
+  }
   $('#pdf').addEventListener('click',function(){makePdf(w)});
   $('#mailPdf').addEventListener('click',function(){
     var b=this,em=(w.email||'').trim();
@@ -957,7 +967,7 @@ function bindW(w){
 function nuovo(){
   var anno=new Date().getFullYear();var mx=0;
   S.weddings.forEach(function(w){if(w.anno===anno&&w.numero>mx)mx=w.numero});
-  var w=emptyWedding(anno,mx+1);w.id=anno+'-'+Date.now().toString(36);S.weddings.push(w);persist(w);
+  var w=emptyWedding(anno,mx+1);w.id=anno+'-'+Date.now().toString(36);S.bozza=w;
   location.hash='matrimonio-'+w.id;
 }
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('#newTop');if(a){e.preventDefault();nuovo()}});
