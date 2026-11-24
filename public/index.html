@@ -425,6 +425,7 @@ function bindDash(){
     try{await calSync(w);persist(w);toast('Data salvata e matrimonio in Google Calendar (verde)')}catch(e){toast('Data salvata (calendario non riuscito: '+calErr(e)+')')}
     route2()})});
   document.querySelectorAll('[data-pc]').forEach(function(b){b.addEventListener('click',async function(){
+    if(!b.dataset.armed){b.dataset.armed='1';b.textContent='Sicuro?';setTimeout(function(){if(document.body.contains(b)){delete b.dataset.armed;b.textContent='Conferma'}},4000);return}
     var w=byId(b.dataset.pc);if(!w)return;delete w.attesa;persist(w);
     var m='Matrimonio confermato';
     if(w.data){try{await calSync(w);persist(w);m+=' e calendario aggiornato (rosso)'}catch(e){m+=' (calendario non aggiornato: '+calErr(e)+')'}}
@@ -795,7 +796,7 @@ function viewW(w){
   // calendario
   out+='<div class="card sect"><h2>Google Calendar</h2><div class="cal"><b>MATRIMONIO</b><div class="hint" style="margin-top:4px">'+esc(dlong(w.data)||'data da inserire')+' · tutto il giorno · rosso pomodoro</div>'
    +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Chiesa '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
-   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn'+(w.attesa?'':' pri')+'" id="attBtn" style="'+(w.attesa?'background:#2e9d5b;color:#fff;border-color:#2e9d5b':'')+'">'+(w.attesa?'In attesa di conferma · clicca per confermare':'Segna come in attesa di conferma')+'</button></div>'
+   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#2e9d5b;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span><button class="btn" id="attBtn">Rimetti in attesa di conferma</button>')+'</div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+(w.calEventId?'Aggiorna evento in Google Calendar':'Crea evento in Google Calendar')+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il PDF va allegato a mano.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
   return out;
 }
@@ -836,6 +837,7 @@ function bindW(w){
   m.querySelectorAll('[data-delap]').forEach(function(b){b.addEventListener('click',function(){w.appuntamenti.splice(+b.dataset.delap,1);changed(true)})});
   $('#addAp').addEventListener('click',function(){w.appuntamenti=w.appuntamenti||[];w.appuntamenti.push({tipo:TIPI_APP[0],data:'',ora:'',note:'',fatto:false});changed(true)});
   $('#attBtn').addEventListener('click',async function(){
+    if(w.attesa&&!this.dataset.armed){var bt=this;bt.dataset.armed='1';bt.textContent='Sicuro? Clicca di nuovo per confermare';setTimeout(function(){if(document.body.contains(bt)){delete bt.dataset.armed;bt.textContent='Conferma matrimonio'}},4000);return}
     w.attesa=!w.attesa;if(!w.attesa)delete w.attesa;persist(w);
     if(w.calEventId&&w.data){try{await calSync(w)}catch(e){toast('Calendario non aggiornato: '+calErr(e))}}
     m.innerHTML=viewW(w);bindW(w)});
