@@ -846,11 +846,13 @@ function viewW(w){
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
-  out+='<div class="card sect"><h2>Cerimonia, ricevimento e contatti</h2><div class="f">'
+  out+='<div class="card sect"><h2>Contatti</h2><div class="f">'
+   +inp('email','Social e mail','s9','text',w.email)
+   +'<label class="s3">Consenso condivisione<select data-p="condivisione"><option value=""'+(w.condivisione===''?' selected':'')+'>Da raccogliere</option><option value="si"'+(w.condivisione==='si'?' selected':'')+'>Sì</option><option value="no"'+(w.condivisione==='no'?' selected':'')+'>No</option></select></label></div></div>';
+  out+='<div class="card sect"><h2>Cerimonia e ricevimento</h2><div class="f">'
    +inp('chiesa.nome','Chiesa','s6','text',w.chiesa.nome)+inp('chiesa.citta','Città','s4','text',w.chiesa.citta)+inp('chiesa.prov','Prov','s2','text',w.chiesa.prov)
    +inp('ristorante.nome','Ristorante','s6','text',w.ristorante.nome)+inp('ristorante.citta','Città','s4','text',w.ristorante.citta)+inp('ristorante.prov','Prov','s2','text',w.ristorante.prov)
-   +inp('email','Social e mail','s6','text',w.email)
-   +'<label class="s3">Consenso condivisione<select data-p="condivisione"><option value=""'+(w.condivisione===''?' selected':'')+'>Da raccogliere</option><option value="si"'+(w.condivisione==='si'?' selected':'')+'>Sì</option><option value="no"'+(w.condivisione==='no'?' selected':'')+'>No</option></select></label></div></div>';
+   +'</div></div>';
   // appuntamenti
   out+='<div class="card sect"><h2>Appuntamenti</h2>';
   var aps=w.appuntamenti||[];
@@ -881,14 +883,14 @@ function viewW(w){
      +'<td><input type="date" data-pp="'+i+'.data" value="'+esc(p.data||'')+'"></td>'
      +'<td><input inputmode="decimal" data-pp="'+i+'.importo" value="'+(p.importo?esc(String(p.importo).replace('.',',')):'')+'" style="min-width:90px"></td>'
      +(p.tipo==='sconto'?'<td><span class="hint">—</span></td><td><span class="hint">—</span></td>':'<td><select data-pp="'+i+'.metodo"><option value=""></option>'+METODI.map(function(m){return '<option'+(p.metodo===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></td>'
-     +'<td><select data-pp="'+i+'.ricevuto"><option value=""></option>'+S.set.team.map(function(m){return '<option'+(p.ricevuto===m?' selected':'')+'>'+esc(m)+'</option>'}).join('')+'</select></td>')
+     +'<td><select data-pp="'+i+'.ricevuto"><option value=""></option>'+['Simone','Pier'].concat(p.ricevuto&&['Simone','Pier'].indexOf(p.ricevuto)<0?[p.ricevuto]:[]).map(function(m){return '<option'+(p.ricevuto===m?' selected':'')+'>'+esc(m)+'</option>'}).join('')+'</select></td>')
      +'<td>'+(p.tipo==='sconto'?'<span class="hint">—</span>':'<label class="row" style="text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px;flex-wrap:nowrap;gap:6px"><input type="checkbox" style="width:auto" data-pp="'+i+'.fatturato" '+(p.fatturato?'checked':'')+'>Emessa</label>')+'</td>'
      +'<td><button class="btn sm del" data-delp="'+i+'" aria-label="Elimina riga">×</button></td></tr>';
   }).join('');
   out+='</tbody></table></div><div class="row" style="margin-top:10px"><button class="btn" id="addP">Aggiungi caparra confirmatoria</button></div>';
   var tot=totale(w),a=acconti(w),sc=sconti(w),sa=tot-a-sc;
   out+='<div class="row" style="margin-top:14px;gap:10px;align-items:center"><button class="chip'+(w.contanti?' on':'')+'" id="cont">Contanti</button><span class="hint">'+(w.contanti?'Contanti: la dicitura + IVA è tolta dal totale.':'I prezzi sono + IVA. Attiva Contanti per togliere la dicitura + IVA dal totale.')+'</span></div>';
-  out+='<div class="sum" style="margin-top:10px"><div><span>Totale'+(w.contanti?'':' + IVA')+'</span><span>'+eur(tot)+'</span></div><div><span>Caparra confirmatoria versata</span><span>– '+eur(a)+'</span></div>'+(sc>0?'<div><span>Sconto concesso</span><span>– '+eur(sc)+'</span></div>':'')+'<div><span>Saldo</span><span>'+eur(sa)+'</span></div></div></div>';
+  out+='<div class="sum" style="margin-top:10px"><div><span>Totale'+(w.contanti?'':' + IVA')+'</span><span>'+eur(tot)+'</span></div>'+(w.contanti||tot<=0?'':'<div style="padding-top:0;margin-top:-6px"><span class="hint" style="font-size:11px;margin:0">IVA 22% inclusa</span><span class="hint" style="font-size:11px;margin:0">'+eur(tot*1.22)+'</span></div>')+'<div><span>Caparra confirmatoria versata</span><span>– '+eur(a)+'</span></div>'+(sc>0?'<div><span>Sconto concesso</span><span>– '+eur(sc)+'</span></div>':'')+'<div><span>Saldo</span><span>'+eur(sa)+'</span></div></div></div>';
   // fatturazione + note
   out+='<div class="card sect"><h2>Fatturazione e note</h2><div class="f">'+'<div class="s12 hint" style="margin-bottom:-6px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Residenza fiscale degli sposi</div>'+inp('resVia','Via','s12','text',w.resVia!=null?w.resVia:w.residenza)+inp('resCitta','Paese','s6','text',w.resCitta)+inp('resProv','Provincia','s3','text',w.resProv)+inp('resCap','CAP','s3','text',w.resCap)+inp('cf','Codice fiscale','s6','text',w.cf)
    +'<label class="s12">Note<textarea data-p="note">'+esc(w.note)+'</textarea></label></div></div>';
@@ -898,6 +900,21 @@ function viewW(w){
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span><button class="btn" id="attBtn">Rimetti in attesa di conferma</button>')+'</div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+(w.calEventId?'Aggiorna evento in Google Calendar':'Crea evento in Google Calendar')+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il contratto si allega da solo quando lo generi.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
   return out;
+}
+function svcPop(w,i,done){
+  var s=w.servizi[i];var old=document.getElementById('svcPop');if(old)old.remove();
+  var items=S.listino.filter(function(x){return x.cat===catOf(s.k)&&x.nome});
+  var m=document.createElement('div');m.id='svcPop';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML='<div class="card" style="width:min(520px,100%);max-height:85vh;overflow:auto;box-shadow:0 16px 48px rgba(0,0,0,.35)"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px"><h2 style="margin:0">'+esc(svcLabel(s.k))+'</h2><button class="btn sm" id="spX">Chiudi</button></div><p class="hint" style="margin:0 0 10px">Attuale: <b>'+esc(s.desc||'nessuna descrizione')+'</b>'+(s.prezzo?' · '+esc(eur(num(s.prezzo))):'')+'. Scegli il nuovo pacchetto oppure togli il servizio.</p>'
+   +(items.length?items.map(function(x,k){return '<button class="item" data-sw="'+k+'" style="display:flex;width:100%;justify-content:space-between;gap:10px;text-align:left;background:transparent;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;color:inherit"><b>'+esc(x.nome)+'</b><span>'+(x.prezzo?esc(eur(num(x.prezzo))):'')+'</span></button>'}).join(''):'<div class="empty">Nessun pacchetto in listino per questo servizio: scrivi la descrizione a mano.</div>')
+   +'<div class="row" style="margin-top:10px;gap:8px"><button class="btn del" id="spOff">Togli il servizio</button><button class="btn" id="spNo">Annulla</button></div></div>';
+  document.body.appendChild(m);
+  var close=function(){m.remove();document.removeEventListener('keydown',kd)};
+  var kd=function(e){if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
+  m.addEventListener('click',function(e){if(e.target===m)close()});
+  $('#spX').addEventListener('click',close);$('#spNo').addEventListener('click',close);
+  m.querySelectorAll('[data-sw]').forEach(function(b){b.addEventListener('click',function(){var x=items[+b.dataset.sw];s.desc=x.desc||x.nome;s.prezzo=num(x.prezzo);close();toast('Pacchetto cambiato: '+x.nome);done()})});
+  $('#spOff').addEventListener('click',function(){var df=SERVIZI.filter(function(z){return z.k===s.k})[0];s.attivo=false;s.desc=df?df.desc:'';s.prezzo=0;s.team=[];s.stato='da_fare';s.link='';close();done()});
 }
 function bindW(w){
   var m=$('#main');
@@ -909,6 +926,7 @@ function bindW(w){
   m.querySelectorAll('[data-sp]').forEach(function(el){
     el.addEventListener('change',function(){
       var a=el.dataset.sp.split('.');var s=w.servizi[+a[0]];var f=a[1];
+      if(el.type==='checkbox'&&!el.checked&&s.attivo){el.checked=true;svcPop(w,+a[0],function(){changed(true)});return}
       if(el.type==='checkbox'){s[f]=el.checked;
         if(!el.checked){var df=SERVIZI.filter(function(x){return x.k===s.k})[0];s.desc=df?df.desc:'';s.prezzo=0;s.team=[];s.stato='da_fare';s.link=''}
         if(el.checked&&(s.k==='foto'||s.k==='fotolibro')){var o=s.k==='foto'?'fotolibro':'foto';w.servizi.forEach(function(x){if(x.k===o&&x.attivo){x.attivo=false;toast(svcLabel(s.k)+' e '+svcLabel(o)+' non si possono scegliere insieme: tolto '+svcLabel(o))}})}
@@ -1105,7 +1123,7 @@ async function makePdf(w,mail){
     pr.forEach(function(p){var vals=p?[p.tipo==='sconto'?'Sconto':'Caparra',dshort(p.data),num(p.importo)?eur(num(p.importo)):'',p.tipo==='sconto'?'':(p.metodo||''),p.tipo==='sconto'?'':(p.ricevuto||'')]:['','','','',''];x=M;cols.forEach(function(c,i){box(x,y,CW*c[1],19);T(x+6,y+5.5,vals[i],{z:8.5});x+=CW*c[1]});y+=19});
     y+=12;
     var bx=M+CW*.52,bw=CW*.48,tot=totale(w),ac=acconti(w),sc=sconti(w),sa=tot-ac-sc,sumTop=y;
-    box(bx,y,bw,22,pale);T(bx+8,y+7,w.contanti?'TOTALE':'TOTALE + IVA',{b:1,z:9});T(bx+bw-8,y+6,eur(tot),{b:1,z:10,al:'r'});y+=22;
+    box(bx,y,bw,22,pale);T(bx+8,y+7,w.contanti?'TOTALE':'TOTALE + IVA',{b:1,z:9});T(bx+bw-8,y+6,eur(tot),{b:1,z:10,al:'r'});y+=22;if(!w.contanti&&tot>0){T(bx+8,y+3,'IVA 22% inclusa',{z:7,c:mut});T(bx+bw-8,y+3,eur(tot*1.22),{z:7,c:mut,al:'r'});y+=12}
     if(ac>0||sc===0){box(bx,y,bw,18);T(bx+8,y+5.5,'Caparra confirmatoria',{z:8.5});T(bx+bw-8,y+5,'– '+eur(ac),{z:9,al:'r'});y+=18}
     if(sc>0){box(bx,y,bw,18);T(bx+8,y+5.5,'Sconto',{z:8.5});T(bx+bw-8,y+5,'– '+eur(sc),{z:9,al:'r'});y+=18}
     pg.drawRectangle({x:bx,y:H-y-24,width:bw,height:24,color:ink});T(bx+8,y+8,'SALDO',{b:1,z:10,c:white});T(bx+bw-8,y+6.5,eur(sa),{b:1,z:12,c:white,al:'r'});
