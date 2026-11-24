@@ -841,7 +841,7 @@ function viewW(w){
   S._shown=JSON.stringify(w);
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
-   +(w===S.bozza?'<div class="row"><button class="btn pri" id="okBozza" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Conferma e salva contratto</button><button class="btn" id="noBozza">Annulla</button></div></div><div class="card" style="border-color:#e0b100;margin-bottom:14px"><b>Bozza non ancora salvata.</b> <span class="hint">Il contratto viene creato solo quando premi "Conferma e salva contratto". Se esci, non viene salvato nulla.</span></div>'
+   +(w===S.bozza?'<div class="row"><button class="btn pri" id="linkBozza" style="background:#d93025;border-color:#d93025;color:#fff">Collega a un evento già creato</button><button class="btn pri" id="okBozza" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Conferma e salva contratto</button><button class="btn" id="noBozza">Annulla</button></div></div><div class="card" style="border-color:#e0b100;margin-bottom:14px"><b>Bozza non ancora salvata.</b> <span class="hint">Il contratto viene creato solo quando premi "Conferma e salva contratto". Se esci, non viene salvato nulla.</span></div>'
    :'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
@@ -964,6 +964,7 @@ function bindW(w){
       if(!((w.sposo.nome||'').trim()||(w.sposa.nome||'').trim())){toast('Inserisci almeno il nome di uno dei due sposi');return}
       S.bozza=null;S.weddings.push(w);persist(w);toast('Contratto salvato');route()});
     $('#noBozza').addEventListener('click',function(){S.bozza=null;location.hash='matrimoni'});
+    $('#linkBozza').addEventListener('click',function(){linkPop(w)});
     return;
   }
   $('#pdf').addEventListener('click',function(){makePdf(w)});
@@ -979,6 +980,29 @@ function bindW(w){
     if(S.db)S.db.doc('matrimoni/'+w.id).delete().catch(function(){toast('Eliminazione non riuscita')});
     location.hash='matrimoni';toast('Matrimonio eliminato');
   });
+}
+function mergeVuoti(dst,src){Object.keys(src).forEach(function(k){var v=src[k],d=dst[k];
+  if(k==='id'||k==='anno'||k==='numero'||k==='creato'||k==='servizi'||k==='pagamenti'||k==='appuntamenti'||k==='contratto'||k==='contrattoData')return;
+  if(v&&typeof v==='object'&&!Array.isArray(v)){if(d&&typeof d==='object')mergeVuoti(d,v)}
+  else if(typeof v==='string'&&v.trim()&&(d===undefined||d===''))dst[k]=v})}
+function linkPop(draft){
+  var old=document.getElementById('linkPop');if(old)old.remove();
+  var m=document.createElement('div');m.id='linkPop';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML='<div class="card" style="width:min(560px,100%);max-height:85vh;overflow:auto;box-shadow:0 16px 48px rgba(0,0,0,.35)"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px"><h2 style="margin:0">Collega a un matrimonio già creato</h2><button class="btn sm" id="lkX">Chiudi</button></div><p class="hint" style="margin:0 0 10px">Scegli il matrimonio: si apre la sua scheda con tutti i dati già inseriti. Non viene creato nessun evento nuovo.</p><input id="lkQ" placeholder="Cerca per nome" style="width:100%;margin-bottom:10px"><div id="lkL"></div></div>';
+  document.body.appendChild(m);
+  var close=function(){m.remove();document.removeEventListener('keydown',kd)};
+  var kd=function(e){if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
+  m.addEventListener('click',function(e){if(e.target===m)close()});$('#lkX').addEventListener('click',close);
+  var list=S.weddings.slice().sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
+  function draw(){
+    var q=($('#lkQ').value||'').toLowerCase().trim();
+    var v=list.filter(function(w){return !q||(nomiSposi(w)+' '+(w.data||'')).toLowerCase().indexOf(q)>=0});
+    $('#lkL').innerHTML=v.length?v.map(function(w){var c=w.attesa?'#2e9d5b':'#d93025';
+      return '<button class="item" data-lk="'+esc(w.id)+'" style="display:flex;width:100%;gap:10px;align-items:center;text-align:left;background:transparent;border:1px solid var(--line);border-left:4px solid '+c+';border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;color:inherit"><span class="pill" style="background:'+c+';color:#fff;border-color:transparent;font-weight:800">'+(w.attesa?'IN ATTESA':'CONFERMATO')+'</span><span style="flex:1"><b>'+esc(nomiSposi(w))+'</b><br><span class="hint" style="margin:0">'+esc(w.data?dlong(w.data):'senza data')+(w.ora?' · '+esc(w.ora):'')+(w.contrattoGenerato?' · contratto già generato':'')+'</span></span></button>'}).join(''):'<div class="empty">Nessun matrimonio trovato.</div>';
+    $('#lkL').querySelectorAll('[data-lk]').forEach(function(b){b.addEventListener('click',function(){
+      var t=byId(b.dataset.lk);if(!t)return;
+      mergeVuoti(t,draft);persist(t);S.bozza=null;close();location.hash='matrimonio-'+t.id;toast('Collegato: '+nomiSposi(t))})})}
+  $('#lkQ').addEventListener('input',draw);draw();$('#lkQ').focus();
 }
 function nuovo(){
   var anno=new Date().getFullYear();var mx=0;
