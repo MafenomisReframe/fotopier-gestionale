@@ -982,9 +982,9 @@ function viewList(){
     if(q){var hay=(nomiSposi(w)+' '+w.chiesa.nome+' '+w.ristorante.nome+' '+lab(w)).toLowerCase();if(hay.indexOf(q)<0)return false}
     return true});
   if(!rows.length)return out+'<div class="card empty">Nessun matrimonio trovato.</div>';
-  out+='<div class="card scroll tlw"><table class="tl"><thead><tr><th>N.</th><th>Data</th><th>Sposi</th><th>Servizi</th><th class="r">Totale</th><th class="r">Saldo</th><th>Stato</th></tr></thead><tbody>'
-   +rows.map(function(w){var st=statoW(w),s=saldo(w);
-     return '<tr class="click rc '+(st.k==='consegnato'||st.k==='finito'?'rrd':(totale(w)>0||w.contrattoGenerato?'rok':'rno'))+'" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
+  out+='<div class="card scroll tlw"><table class="tl"><thead><tr><th>N.</th><th>Data</th><th>Sposi</th><th>Servizi</th><th>Stato</th></tr></thead><tbody>'
+   +rows.map(function(w){var st=statoW(w);
+     return '<tr class="click rc '+(st.k==='consegnato'||st.k==='finito'?'rrd':(totale(w)>0||w.contrattoGenerato?'rok':'rno'))+'" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
    +'</tbody></table></div>';
   return out;
 }
