@@ -283,7 +283,7 @@ function calInput(w){
   var d=parseD(w.data),n=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
   var iso=function(x){return x.getFullYear()+'-'+two(x.getMonth()+1)+'-'+two(x.getDate())+'T00:00:00'};
   var luogo=[w.chiesa.nome&&'Cerimonia: '+w.chiesa.nome+(w.chiesa.citta?' ('+w.chiesa.citta+')':''),w.ristorante.nome&&'Ricevimento: '+w.ristorante.nome+(w.ristorante.citta?' ('+w.ristorante.citta+')':'')].filter(Boolean);
-  var desc=[w.attesa?'IN ATTESA DI CONFERMA':'',w.contrattoGenerato?'Contratto generato il '+dshort(w.contrattoGenerato):'',w.ora?'Cerimonia ore '+w.ora:'',luogo.join('\n'),'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||''),w.email?'Mail: '+w.email:'',(w.attesa?'':attivi(w).map(function(x){return svcLabel(x.k)+(x.desc?' – '+x.desc:'')}).join(', ')),'Scheda e contratto: '+location.origin+'/#matrimonio-'+w.id].filter(Boolean).join('\n');
+  var desc=[w.calNote?'Note dal calendario: '+w.calNote:'',w.attesa?'IN ATTESA DI CONFERMA':'',w.contrattoGenerato?'Contratto generato il '+dshort(w.contrattoGenerato):'',w.ora?'Cerimonia ore '+w.ora:'',luogo.join('\n'),'Sposo: '+(w.sposo.nome||'')+' '+(w.sposo.tel||''),'Sposa: '+(w.sposa.nome||'')+' '+(w.sposa.tel||''),w.email?'Mail: '+w.email:'',(w.attesa?'':attivi(w).map(function(x){return svcLabel(x.k)+(x.desc?' – '+x.desc:'')}).join(', ')),'Scheda e contratto: '+location.origin+'/#matrimonio-'+w.id].filter(Boolean).join('\n');
   var inp={calendarId:S.set.calendarId||'weddingfotopier@gmail.com',summary:'MATRIMONIO '+nomiSposi(w),startTime:iso(d),endTime:iso(n),allDay:true,colorId:w.attesa?'10':'11',description:desc,notificationLevel:'NONE'};
   if(luogo[0])inp.location=String(luogo[0]).replace(/^Cerimonia: /,'');
   return inp}
@@ -382,7 +382,7 @@ function dayPop(ds){
     if(w.data===ds){
       h+='<div class="card" style="border-color:'+(w.attesa?'#2e9d5b':'#d93025')+';margin-bottom:10px"><div class="row" style="gap:8px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+(w.attesa?'#2e9d5b':'#d93025')+';color:#fff;border-color:transparent;font-weight:800">MATRIMONIO'+(w.attesa?' · IN ATTESA':'')+'</span></div><b>'+esc(nomiSposi(w))+'</b>'
        +row('Telefono',esc([w.sposo.tel,w.sposa&&w.sposa.tel].filter(Boolean).join(' · ')))+row('Email',esc(w.email||''))
-       +row('Cerimonia',esc([w.chiesa&&w.chiesa.nome,w.ora].filter(Boolean).join(' · ')))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))
+       +row('Cerimonia',esc([w.chiesa&&w.chiesa.nome,w.ora].filter(Boolean).join(' · ')))+row('Ricevimento',esc((w.ristorante&&w.ristorante.nome)||''))+row('Note calendario',esc(w.calNote||''))
        +'<div style="margin-top:8px"><a class="btn sm" href="#matrimonio-'+esc(w.id)+'">Apri scheda</a></div></div>';
     }
     (w.appuntamenti||[]).forEach(function(a){
