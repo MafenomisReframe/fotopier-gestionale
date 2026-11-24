@@ -265,7 +265,19 @@ function nomiSposi(w){var a=(w.sposo.nome||'').trim(),b=(w.sposa.nome||'').trim(
 /* ---------- archivio (db condiviso, con ripiego in memoria) ---------- */
 var S={listino:[],weddings:[],set:Object.assign({},DEFAULT_SET),db:null,live:false,loaded:false,route:'dashboard',filter:'tutti',q:''};
 var saveTimers={};
+function lab(w){var n=w.numero||0;return (w.anno||'')+'-'+(n<10?'00':n<100?'0':'')+n}
+function yearOf(w){return /^\d{4}/.test(w.data||'')?+w.data.slice(0,4):(w.anno||new Date().getFullYear())}
+function renumber(except){
+  var by={};S.weddings.forEach(function(w){var y=yearOf(w);(by[y]=by[y]||[]).push(w)});
+  Object.keys(by).forEach(function(y){
+    by[y].sort(function(a,b){return (a.data||'9999-99-99').localeCompare(b.data||'9999-99-99')||(a.ora||'').localeCompare(b.ora||'')||(a.creato||0)-(b.creato||0)});
+    by[y].forEach(function(w,i){
+      if(w.numero!==i+1||w.anno!==+y){w.numero=i+1;w.anno=+y;
+        if(w!==except&&S.db)S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w))).catch(function(){})}
+    })})
+}
 function persist(w){
+  renumber(w);sortW();
   if(!S.db){return}
   clearTimeout(saveTimers[w.id]);
   saveTimers[w.id]=setTimeout(function(){
@@ -575,12 +587,12 @@ function viewList(){
     var st=statoW(w).k;
     if(S.filter==='saldo'){if(!(saldo(w)>0.005&&attivi(w).length))return false}
     else if(S.filter!=='tutti'&&st!==S.filter)return false;
-    if(q){var hay=(nomiSposi(w)+' '+w.chiesa.nome+' '+w.ristorante.nome+' '+w.id).toLowerCase();if(hay.indexOf(q)<0)return false}
+    if(q){var hay=(nomiSposi(w)+' '+w.chiesa.nome+' '+w.ristorante.nome+' '+lab(w)).toLowerCase();if(hay.indexOf(q)<0)return false}
     return true});
   if(!rows.length)return out+'<div class="card empty">Nessun matrimonio trovato.</div>';
   out+='<div class="card scroll"><table><thead><tr><th>N.</th><th>Data</th><th>Sposi</th><th>Servizi</th><th class="r">Totale</th><th class="r">Saldo</th><th>Stato</th></tr></thead><tbody>'
    +rows.map(function(w){var st=statoW(w),s=saldo(w);
-     return '<tr class="click" data-id="'+esc(w.id)+'"><td>'+esc(w.id)+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
+     return '<tr class="click" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
    +'</tbody></table></div>';
   return out;
 }
@@ -609,7 +621,7 @@ function person(w,key,title){
 function viewW(w){
   S._shown=JSON.stringify(w);
   var st=statoW(w);
-  var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(w.id)+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
+  var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
    +'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn del" id="delW">Elimina</button></div></div>';
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
@@ -743,7 +755,7 @@ function bindW(w){
 function nuovo(){
   var anno=new Date().getFullYear();var mx=0;
   S.weddings.forEach(function(w){if(w.anno===anno&&w.numero>mx)mx=w.numero});
-  var w=emptyWedding(anno,mx+1);S.weddings.push(w);sortW();persist(w);
+  var w=emptyWedding(anno,mx+1);w.id=anno+'-'+Date.now().toString(36);S.weddings.push(w);persist(w);
   location.hash='matrimonio-'+w.id;
 }
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('#newTop');if(a){e.preventDefault();nuovo()}});
@@ -766,7 +778,7 @@ function bindSet(){
   $('#addMember').addEventListener('click',function(){var v=$('#newMember').value.trim();if(!v)return;if(S.set.team.indexOf(v)<0)S.set.team.push(v);persistSet();$('#main').innerHTML=viewSet();bindSet()});
   $('#csv').addEventListener('click',function(){
     var rows=[['Pratica','Data','Sposo','Sposa','Chiesa','Ristorante','Totale','Acconti','Sconti','Saldo','Stato']];
-    S.weddings.forEach(function(w){rows.push([w.id,w.data,w.sposo.nome,w.sposa.nome,w.chiesa.nome,w.ristorante.nome,totale(w),acconti(w),sconti(w),saldo(w),statoW(w).t])});
+    S.weddings.forEach(function(w){rows.push([lab(w),w.data,w.sposo.nome,w.sposa.nome,w.chiesa.nome,w.ristorante.nome,totale(w),acconti(w),sconti(w),saldo(w),statoW(w).t])});
     var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
     save('matrimoni.csv',txt);
   });
@@ -872,7 +884,7 @@ function start(){
     S.db=db;nav();
     db.collection('matrimoni').onSnapshot(function(snap){
       clearTimeout(timer);S.loaded=true;if(!snap.metadata.fromCache)S.live=true;
-      S.weddings=snap.docs.map(function(d){return d.data()});sortW();refresh();
+      S.weddings=snap.docs.map(function(d){return d.data()});sortW();renumber();refresh();
     },function(){nav()});
     db.doc('impostazioni/listino').onSnapshot(function(d){if(d.exists&&Array.isArray(d.data().voci)){S.listino=d.data().voci;if(S.route==='listino'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route()}},function(){});
     db.doc('impostazioni/studio').onSnapshot(function(d){if(d.exists){var prev=S.set;S.set=Object.assign({},DEFAULT_SET,d.data());S.set.team=(S.set.team||[]).slice();(prev.team||[]).forEach(function(n){if(S.set.team.indexOf(n)<0)S.set.team.push(n)});S.set.teamMail=Object.assign({},(prev.teamMail||{}),(d.data().teamMail||{}));if(S.route==='impostazioni'&&!/INPUT/.test((document.activeElement||{}).tagName||''))route();else if(S.route==='team')refresh()}},function(){});
