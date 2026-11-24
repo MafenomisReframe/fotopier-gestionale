@@ -162,6 +162,9 @@ textarea{resize:vertical;min-height:64px}
   .f label.s12{grid-column:span 12}
 }
 @media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}}
+tr.rc td{border-top:2px solid var(--b);border-bottom:2px solid var(--b)}tr.rc td:first-child{border-left:2px solid var(--b);border-radius:8px 0 0 8px}tr.rc td:last-child{border-right:2px solid var(--b);border-radius:0 8px 8px 0}
+tr.rok{--b:#2e9d5b}tr.rok td{background:rgba(46,157,91,.22)}
+tr.rno{--b:#e0b100}tr.rno td{background:rgba(224,177,0,.13)}
 </style>
 </head>
 <body>
@@ -741,7 +744,7 @@ function viewList(){
   if(!rows.length)return out+'<div class="card empty">Nessun matrimonio trovato.</div>';
   out+='<div class="card scroll"><table><thead><tr><th>N.</th><th>Data</th><th>Sposi</th><th>Servizi</th><th class="r">Totale</th><th class="r">Saldo</th><th>Stato</th></tr></thead><tbody>'
    +rows.map(function(w){var st=statoW(w),s=saldo(w);
-     return '<tr class="click" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
+     return '<tr class="click rc '+(totale(w)>0||w.contrattoGenerato?'rok':'rno')+'" data-id="'+esc(w.id)+'"><td>'+esc(lab(w))+'</td><td>'+esc(dshort(w.data))+'</td><td><b>'+esc(nomiSposi(w))+'</b></td><td>'+esc(attivi(w).map(function(x){return svcLabel(x.k)}).join(', '))+'</td><td class="r">'+eur(totale(w))+'</td><td class="r">'+(attivi(w).length?'<span class="pill '+(s>0.005?'warn':'good')+'">'+eur(s)+'</span>':'')+'</td><td><span class="pill '+st.c+'">'+esc(st.t)+'</span></td></tr>'}).join('')
    +'</tbody></table></div>';
   return out;
 }
