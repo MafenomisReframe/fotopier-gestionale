@@ -824,7 +824,7 @@ function viewW(w){
   S._shown=JSON.stringify(w);
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
-   +'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn del" id="delW">Elimina</button></div></div>';
+   +'<div class="row"><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>';
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
@@ -941,6 +941,11 @@ function bindW(w){
   $('#cont').addEventListener('click',function(){w.contanti=!w.contanti;if(!w.contanti)delete w.contanti;changed(true)});
   $('#addP').addEventListener('click',function(){w.pagamenti.push({tipo:'acconto',data:todayStr(),importo:0,metodo:'',ricevuto:'',fatturato:false});changed(true)});
   $('#pdf').addEventListener('click',function(){makePdf(w)});
+  $('#mailPdf').addEventListener('click',function(){
+    var b=this,em=(w.email||'').trim();
+    if(!em){toast('Scrivi prima l\'email degli sposi e salva');return}
+    if(!b.dataset.armed){b.dataset.armed='1';b.textContent='Invia a '+em+'? Clicca ancora';setTimeout(function(){if(document.body.contains(b)){delete b.dataset.armed;b.textContent='Invia copia all\'email'}},5000);return}
+    delete b.dataset.armed;b.textContent='Invia copia all\'email';makePdf(w,true)});
   $('#delW').addEventListener('click',function(){
     var b=$('#delW');if(!b.dataset.sure){b.dataset.sure='1';b.textContent='Conferma eliminazione';setTimeout(function(){if(b){b.textContent='Elimina';delete b.dataset.sure}},4000);return}
     calDelIds([w.calEventId].concat((w.appuntamenti||[]).map(function(x){return x.calEventId})));
@@ -996,7 +1001,7 @@ var CLAUSOLE=[
 ['7. Consenso all’uso promozionale delle immagini','Gli sposi possono autorizzare l’uso di estratti del lavoro (foto e video) sul sito, sui social e su materiale promozionale del titolare. Il consenso è facoltativo, separato dal contratto e non condiziona il servizio. Si può revocare in ogni momento scrivendo a info@fotopier.com; la revoca vale per gli usi futuri.']];
 var RECESSO=['8. Recesso e annullamento dell’evento','Se gli sposi annullano il servizio meno di tre mesi prima della data del matrimonio, sono tenuti a corrispondere al fotografo il 50% del corrispettivo pattuito, a titolo di penale. Se l’annullamento avviene con più di tre mesi di anticipo, resta dovuta la caparra confirmatoria già versata. La penale non si applica in caso di gravi e documentati motivi di forza maggiore, come lutto in famiglia stretta, grave malattia o infortunio degli sposi o dei loro familiari stretti. In caso di rinvio dell’evento, le parti concordano una nuova data, compatibilmente con la disponibilità del fotografo.'];
 
-async function makePdf(w){
+async function makePdf(w,mail){
   if(!window.PDFLib){toast('Libreria PDF non caricata, riprova tra un attimo');return}
   try{
     var P=PDFLib,doc=await P.PDFDocument.create();
@@ -1068,6 +1073,15 @@ async function makePdf(w){
     T(M,y-8,'Luogo e data ________________________',{z:8.5});hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
+    if(mail){
+      var bn='';for(var q=0;q<bytes.length;q+=32768)bn+=String.fromCharCode.apply(null,bytes.subarray(q,q+32768));
+      toast('Invio in corso a '+w.email+'…');
+      var mr=await fetch('/api/mail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:w.email,nome:nome,pdf:btoa(bn),subject:'Contratto servizio fotografico matrimonio – '+nomiSposi(w),text:'Buongiorno,\n\nin allegato trovate la copia del contratto per il servizio del vostro matrimonio.\n\nPer qualsiasi dubbio siamo a disposizione.\n\nA presto,\nFoto Pier'})});
+      var mj=await mr.json().catch(function(){return {}});
+      if(mr.ok){w.contrattoInviato=todayStr()+' a '+w.email;persist(w);toast('Contratto inviato a '+w.email)}
+      else toast('Invio non riuscito: '+(mj.error||mr.status));
+      return;
+    }
     await save(nome,bytes);
     w.contrattoGenerato=todayStr();persist(w);
     try{var bin='';for(var k=0;k<bytes.length;k+=32768)bin+=String.fromCharCode.apply(null,bytes.subarray(k,k+32768));

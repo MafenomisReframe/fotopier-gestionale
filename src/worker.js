@@ -122,6 +122,48 @@ async function driveUpload(env, b) {
   return json({ ok: true, id: j.id, link: j.webViewLink, cartella: fname });
 }
 
+async function sendMail(env, b) {
+  const to = String(b.to || '').trim();
+  if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) return json({ error: 'Email non valida' }, 400);
+  if (!b.pdf || b.pdf.length > 12e6) return json({ error: 'PDF mancante o troppo grande' }, 400);
+  const nome = String(b.nome || 'Contratto.pdf').replace(/[\\/:*?"<>|\r\n]+/g, '_').slice(0, 150);
+  const subject = String(b.subject || 'Contratto').replace(/[\r\n]+/g, ' ').slice(0, 200);
+  const text = String(b.text || '').slice(0, 5000);
+  const enc = new TextEncoder();
+  const b64 = (u8) => { let x = ''; for (let i = 0; i < u8.length; i += 32768) x += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(x); };
+  const wrap = (t) => t.replace(/(.{76})/g, '$1\r\n');
+  const bd = 'fpm' + Date.now();
+  const mime = [
+    'To: ' + to,
+    'Subject: =?UTF-8?B?' + b64(enc.encode(subject)) + '?=',
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/mixed; boundary="' + bd + '"',
+    '',
+    '--' + bd,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrap(b64(enc.encode(text))),
+    '--' + bd,
+    'Content-Type: application/pdf; name="' + nome + '"',
+    'Content-Disposition: attachment; filename="' + nome + '"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrap(b.pdf),
+    '--' + bd + '--',
+    ''
+  ].join('\r\n');
+  const raw = b64(enc.encode(mime)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const tok = await driveToken(env);
+  const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const m = (j.error && j.error.message) || 'Errore Gmail';
+    return json({ error: r.status === 403 ? 'Permesso Gmail mancante (serve rifare l\'autorizzazione Google): ' + m : m, code: r.status }, 502);
+  }
+  return json({ ok: true, id: j.id });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -155,6 +197,7 @@ export default {
         const b = await req.json();
         return await calendar(env, b.tool, b.input || {});
       }
+      if (url.pathname === '/api/mail' && req.method === 'POST') return sendMail(env, await req.json());
       if (url.pathname === '/api/drive' && req.method === 'POST') {
         return await driveUpload(env, await req.json());
       }
