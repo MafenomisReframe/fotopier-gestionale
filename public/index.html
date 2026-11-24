@@ -183,7 +183,19 @@ tr.rrd{--b:#d93025}tr.rrd td{background:rgba(217,48,37,.2)}tr.rno{--b:#e0b100}tr
 .agl{display:flex;flex-direction:column;gap:5px;min-width:0}
 .agl .ev{display:block;border-radius:7px;padding:7px 10px;font-size:14px;text-decoration:none;color:#fff;background:#d93025;line-height:1.3}
 .agl .ev.att{background:#2e9d5b}.agl .ev.ap{background:#e0b100;color:#3d2f00}.agl .ev.ap.alb{background:#e8730c;color:#fff}.agl .ev.ap.post{background:#722f37;color:#fff}.agl .ev.ap.con{background:#3b9ede;color:#fff}
-@media(max-width:700px){.cal-grid{display:none}.cal-ag{display:block}}
+@media(max-width:700px){
+.calcard{padding:12px 2px 12px;border-radius:12px}.calcard>.row{padding:0 10px}
+.cal-grid{gap:0;border-top:1px solid var(--line)}
+.cal-grid .cd{border:0;border-radius:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:2px 1px;gap:2px}
+.cal-grid .cd:nth-child(7n){border-right:0}
+.cal-grid .cd:not(.h){height:auto;min-height:92px;max-height:92px;overflow:hidden}
+.cal-grid .cd.h{font-size:11px;padding:4px 0}
+.cal-grid .cd.day>b{font-size:12px;text-align:center;font-weight:600}
+.cal-grid .cd.day.t>b{background:#1a73e8;color:#fff;border-radius:50%;width:20px;height:20px;line-height:20px;margin:0 auto}
+.cal-grid .cd.t{box-shadow:none;border-color:var(--line)}
+.cd.day .ev{font-size:9.5px;padding:2px 3px;border-radius:3px;font-weight:600;line-height:1.15;pointer-events:none}
+.legend{font-size:10px;gap:8px;padding:0 10px}
+}
 </style>
 </head>
 <body>
@@ -401,12 +413,12 @@ function calendario(){
       ag+='<a class="ev w'+(w.attesa?' att':'')+'" '+(w.attesa?'data-day="'+ds+'" href="#"':'href="#matrimonio-'+esc(w.id)+'"')+'><b>MATRIMONIO'+(w.attesa?' · in attesa':'')+'</b> '+esc(nomiSposi(w))+'</a>'});
     (apBy[d]||[]).forEach(function(x){var tp=x.a.tipo;
       ag+='<a class="ev ap'+(tp==='Ritiro album'?' alb':isPost(tp)?' post':tp==='Contratto'?' con':'')+'" data-day="'+ds+'" href="#"><b>'+esc(tp)+(x.a.ora?' · '+esc(x.a.ora):'')+'</b> '+esc(nomiSposi(x.w))+'</a>';
-      items+='<a class="ev ap'+(tp==='Ritiro album'?' alb':isPost(tp)?' post':tp==='Contratto'?' con':'')+'" data-day="'+ds+'" href="#" title="'+esc(tp+' · '+nomiSposi(x.w))+'">'+esc(tp.split(' ')[0])+(x.a.ora?' '+esc(x.a.ora):'')+'</a>'});
-    cells+='<div class="cd day'+(isT?' t':'')+'"><b>'+d+'</b>'+items+'</div>';
+      items+='<a class="ev ap'+(tp==='Ritiro album'?' alb':isPost(tp)?' post':tp==='Contratto'?' con':'')+'" data-day="'+ds+'" href="#" title="'+esc(tp+' · '+nomiSposi(x.w))+'">'+esc(tp.split(' ')[0])+(x.a.ora?' '+esc(x.a.ora):'')+' '+esc((x.w.sposo.nome||x.w.sposa.nome||'').split(' ')[0])+'</a>'});
+    cells+='<div class="cd day'+(isT?' t':'')+'" data-cell="'+ds+'"><b>'+d+'</b>'+items+'</div>';
     if(ag)agenda+='<div class="agd'+(isT?' t':'')+'"><div class="agn"><b>'+d+'</b><span>'+GGS[(new Date(y,m,d).getDay()+6)%7]+'</span></div><div class="agl">'+ag+'</div></div>';
   }
   for(var k=start+dim;k<42;k++)cells+='<div class="cd"></div>';
-  return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Calendario</h2><div class="row" style="gap:6px"><button class="btn sm" id="calP" aria-label="Mese precedente">‹</button><b style="min-width:130px;text-align:center;text-transform:capitalize">'+MESI[m]+' '+y+'</b><button class="btn sm" id="calN" aria-label="Mese successivo">›</button></div></div><div class="cal-grid">'+cells+'</div><div class="cal-ag">'+(agenda||'<div class="empty">Nessun appuntamento in questo mese</div>')+'</div><div class="legend"><span style="--x:1" class="mc">Matrimonio confermato</span><span class="mv">In attesa</span><span class="ap">Appuntamento</span><span class="co">Contratto</span><span class="po">Impaginato</span><span class="al">Ritiro album</span></div></div>';
+  return '<div class="card calcard"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Calendario</h2><div class="row" style="gap:6px"><button class="btn sm" id="calP" aria-label="Mese precedente">‹</button><b style="min-width:130px;text-align:center;text-transform:capitalize">'+MESI[m]+' '+y+'</b><button class="btn sm" id="calN" aria-label="Mese successivo">›</button></div></div><div class="cal-grid">'+cells+'</div><div class="cal-ag">'+(agenda||'<div class="empty">Nessun appuntamento in questo mese</div>')+'</div><div class="legend"><span style="--x:1" class="mc">Matrimonio confermato</span><span class="mv">In attesa</span><span class="ap">Appuntamento</span><span class="co">Contratto</span><span class="po">Impaginato</span><span class="al">Ritiro album</span></div></div>';
 }
 function dayPop(ds){
   var old=document.getElementById('dayPop');if(old)old.remove();
@@ -542,6 +554,7 @@ function bindDash(){
       var m='Matrimonio in attesa creato';
       try{await calSync(w);persist(w);m+=' e messo in Google Calendar (verde)'}catch(e){m+=' (calendario non riuscito: '+calErr(e)+')'}
       toast(m);route2()})}
+  document.querySelectorAll('.cd.day').forEach(function(c){c.addEventListener('click',function(e){if(e.target.closest('a.ev'))return;var d=c.querySelector('[data-day],a.ev[href^="#matrimonio-"]');var ds=c.dataset.cell;if(ds)dayPop(ds)})});
   document.querySelectorAll('[data-day]').forEach(function(c){c.addEventListener('click',function(e){e.preventDefault();dayPop(c.dataset.day)})});
   function bindAp(P){
     var g=function(x){return $('#'+P+x)};
