@@ -406,7 +406,7 @@ function bindDash(){
           if(ev&&(ev.id||ev.eventId))ap.calEventId=ev.id||ev.eventId;
           if(ev&&ev.htmlLink&&/^https:\/\//.test(ev.htmlLink))ap.calEventLink=ev.htmlLink;
           calMsg=' e messo in calendario';
-        }catch(e){calMsg=' (calendario non riuscito: riprova dalla scheda del matrimonio)'}
+        }catch(e){calMsg=' (calendario non riuscito: '+String((e&&e.message)||(e&&e.code)||'errore').slice(0,160)+')'}
       }
       w.appuntamenti=w.appuntamenti||[];w.appuntamenti.push(ap);persist(w);
       toast('Appuntamento salvato'+calMsg);route2();
