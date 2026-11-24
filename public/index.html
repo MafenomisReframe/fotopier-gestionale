@@ -755,13 +755,13 @@ function viewAdmLock(){var nuova=!S.set.admHash;
    +'<div class="card sect" style="max-width:380px"><input type="password" id="admP1" placeholder="'+(nuova?'Nuova password':'Password')+'" autocomplete="off">'
    +(nuova?'<input type="password" id="admP2" placeholder="Ripeti password" autocomplete="off" style="margin-top:8px">':'')
    +'<div style="margin-top:12px"><button class="btn" id="admGo">'+(nuova?'Salva e entra':'Entra')+'</button></div></div>';}
-function bindAdmLock(){var go=byId('admGo');if(!go)return;
+function bindAdmLock(){var go=$('#admGo');if(!go)return;
   function ok(){try{sessionStorage.setItem('admOk','1')}catch(e){}route2()}
-  function run(){var p=byId('admP1').value;if(!p){toast('Scrivi la password');return}
-    if(!S.set.admHash){if(p.length<4){toast('Almeno 4 caratteri');return}if(p!==byId('admP2').value){toast('Le due password non coincidono');return}
+  function run(){var p=$('#admP1').value;if(!p){toast('Scrivi la password');return}
+    if(!S.set.admHash){if(p.length<4){toast('Almeno 4 caratteri');return}if(p!==$('#admP2').value){toast('Le due password non coincidono');return}
       sha(p).then(function(h){S.set.admHash=h;persistSet();ok()})}
-    else sha(p).then(function(h){if(h===S.set.admHash)ok();else{toast('Password sbagliata');byId('admP1').value=''}})}
-  go.addEventListener('click',run);byId('admP1').addEventListener('keydown',function(e){if(e.key==='Enter')run()});if(byId('admP2'))byId('admP2').addEventListener('keydown',function(e){if(e.key==='Enter')run()});byId('admP1').focus()}
+    else sha(p).then(function(h){if(h===S.set.admHash)ok();else{toast('Password sbagliata');$('#admP1').value=''}})}
+  go.addEventListener('click',run);$('#admP1').addEventListener('keydown',function(e){if(e.key==='Enter')run()});if($('#admP2'))$('#admP2').addEventListener('keydown',function(e){if(e.key==='Enter')run()});$('#admP1').focus()}
 function admChange(){var p=prompt('Nuova password per Amministrazione (almeno 4 caratteri):');if(!p)return;if(p.length<4){toast('Almeno 4 caratteri');return}sha(p).then(function(h){S.set.admHash=h;persistSet();toast('Password cambiata')})}
 /* ---------- amministrazione ---------- */
 var CATS=[['foto','Foto'],['album','Album genitori'],['video','Video'],['share','Share Love'],['extra','Extra']];
@@ -806,7 +806,7 @@ function bindAdm(){
     document.addEventListener('keydown',function esc2(e){if(!document.body.contains(nl)){document.removeEventListener('keydown',esc2);return}if(e.key==='Escape')nl.open=false});
     var q=nl.querySelector('.nls');if(q)q.addEventListener('input',function(){var t=q.value.toLowerCase();nl.querySelectorAll('.nlr').forEach(function(b){b.style.display=b.textContent.toLowerCase().indexOf(t)>=0?'':'none'})})}
   document.querySelectorAll('[data-startlav]').forEach(function(b){b.addEventListener('click',function(){var w=byId(b.dataset.startlav);if(!w)return;w.lavorazione=true;persist(w);location.hash='lavoro-'+w.id})});
-  document.querySelectorAll('#admY .chip[data-y]').forEach(function(b){b.addEventListener('click',function(){S.admY=b.dataset.y;route2()})});var pw=byId('admPw');if(pw)pw.addEventListener('click',admChange);
+  document.querySelectorAll('#admY .chip[data-y]').forEach(function(b){b.addEventListener('click',function(){S.admY=b.dataset.y;route2()})});var pw=$('#admPw');if(pw)pw.addEventListener('click',admChange);
   document.querySelectorAll('tr.click').forEach(function(r){r.addEventListener('click',function(){location.hash='matrimonio-'+r.dataset.id})});
 }
 function kpi(l,v,n){return '<div class="card kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div><div class="n">'+esc(n)+'</div></div>'}
