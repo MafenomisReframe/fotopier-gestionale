@@ -264,6 +264,7 @@ function lavori(w){return (w.servizi||[]).filter(function(s){return s.attivo&&(s
 function statoW(w){
   var a=lavori(w);var d=daysTo(w.data);
   if(!a.length)return {k:'bozza',t:'Bozza',c:''};
+  if(w.lavEsc)return (d!==null&&d>=0)?{k:'arrivo',t:d===0?'Oggi':'In arrivo',c:'warn'}:{k:'bozza',t:'—',c:''};
   var cons=a.every(function(s){return s.stato==='consegnato'});
   var fin=a.every(function(s){return s.stato==='finito'||s.stato==='consegnato'});
   if(cons)return {k:'consegnato',t:'Consegnato',c:'good'};
