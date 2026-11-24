@@ -125,7 +125,7 @@ async function driveUpload(env, b) {
 async function sendMail(env, b) {
   const to = String(b.to || '').trim();
   if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) return json({ error: 'Email non valida' }, 400);
-  if (!b.pdf || b.pdf.length > 12e6) return json({ error: 'PDF mancante o troppo grande' }, 400);
+  if (b.pdf && b.pdf.length > 12e6) return json({ error: 'PDF troppo grande' }, 400);
   const nome = String(b.nome || 'Contratto.pdf').replace(/[\\/:*?"<>|\r\n]+/g, '_').slice(0, 150);
   const subject = String(b.subject || 'Contratto').replace(/[\r\n]+/g, ' ').slice(0, 200);
   const text = String(b.text || '').slice(0, 5000);
@@ -133,26 +133,14 @@ async function sendMail(env, b) {
   const b64 = (u8) => { let x = ''; for (let i = 0; i < u8.length; i += 32768) x += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(x); };
   const wrap = (t) => t.replace(/(.{76})/g, '$1\r\n');
   const bd = 'fpm' + Date.now();
-  const mime = [
-    'To: ' + to,
-    'Subject: =?UTF-8?B?' + b64(enc.encode(subject)) + '?=',
-    'MIME-Version: 1.0',
-    'Content-Type: multipart/mixed; boundary="' + bd + '"',
-    '',
+  const head = ['To: ' + to, 'Subject: =?UTF-8?B?' + b64(enc.encode(subject)) + '?=', 'MIME-Version: 1.0'];
+  const mime = b.pdf ? head.concat([
+    'Content-Type: multipart/mixed; boundary="' + bd + '"', '', '--' + bd,
+    'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', wrap(b64(enc.encode(text))),
     '--' + bd,
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
-    '',
-    wrap(b64(enc.encode(text))),
-    '--' + bd,
-    'Content-Type: application/pdf; name="' + nome + '"',
-    'Content-Disposition: attachment; filename="' + nome + '"',
-    'Content-Transfer-Encoding: base64',
-    '',
-    wrap(b.pdf),
-    '--' + bd + '--',
-    ''
-  ].join('\r\n');
+    'Content-Type: application/pdf; name="' + nome + '"', 'Content-Disposition: attachment; filename="' + nome + '"', 'Content-Transfer-Encoding: base64', '', wrap(b.pdf),
+    '--' + bd + '--', ''
+  ]).join('\r\n') : head.concat(['Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', wrap(b64(enc.encode(text))), '']).join('\r\n');
   const raw = b64(enc.encode(mime)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const tok = await driveToken(env);
   const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw }) });

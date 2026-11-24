@@ -655,10 +655,24 @@ function bindLavW(w){
     s[a[1]]=el.value;syncFinito(w);persist(w);if(a[1]==='stato'){var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)}})});
 }
 /* ---------- team ---------- */
+function nl(o){return o?[o.nome,o.citta].filter(Boolean).join(', '):''}
+function infoLuoghi(w){return [nl(w.chiesa)&&'Cerimonia: '+nl(w.chiesa),nl(w.ristorante)&&'Ricevimento: '+nl(w.ristorante)].filter(Boolean).join(' · ')}
+async function mailAssign(w,s,name){
+  var em=((S.set.teamMail||{})[name]||'').trim();
+  if(!em){toast(name+' assegnato, ma manca la sua email: inseriscila in "Email del team"');return}
+  var body='Ciao '+name+',\n\nsei stato assegnato a questo matrimonio.\n\nSposi: '+nomiSposi(w)+'\nData: '+(w.data?dlong(w.data):'da definire')+(w.ora?' alle '+w.ora:'')+'\n'
+    +(nl(w.chiesa)?'Cerimonia: '+nl(w.chiesa)+'\n':'')+(nl(w.ristorante)?'Ricevimento: '+nl(w.ristorante)+'\n':'')
+    +(w.sposo&&w.sposo.tel?'Telefono sposo: '+w.sposo.tel+'\n':'')+(w.sposa&&w.sposa.tel?'Telefono sposa: '+w.sposa.tel+'\n':'')
+    +'Tuo ruolo: '+(RUOLO[s.k]||svcLabel(s.k))+(s.desc?' ('+s.desc+')':'')+'\n\nFoto Pier';
+  try{var r=await fetch('/api/mail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:em,subject:'Matrimonio '+nomiSposi(w)+(w.data?' · '+dlong(w.data):''),text:body})});
+    var j=await r.json().catch(function(){return {}});
+    toast(r.ok?'Mail inviata a '+name:'Mail a '+name+' non inviata: '+(j.error||r.status))}
+  catch(e){toast('Mail a '+name+' non inviata')}
+}
 function mailReminder(w,rows){
   var to=[];var tm=S.set.teamMail||{};
   rows.forEach(function(x){(x.team||[]).forEach(function(n){if(tm[n]&&to.indexOf(tm[n])<0)to.push(tm[n])})});
-  var luogo=[w.chiesa,w.ristorante].filter(Boolean).join(' · ');
+  var luogo=infoLuoghi(w);
   var body='Ciao,\nti ricordo il matrimonio di '+nomiSposi(w)+' del '+dlong(w.data)+(w.ora?' alle '+w.ora:'')+'.\n'+(luogo?'Luogo: '+luogo+'\n':'')+'Servizio: '+rows.map(function(x){return svcLabel(x.k)+(x.desc?' ('+x.desc+')':'')}).join(', ')+'\n\nFoto Pier';
   return 'mailto:'+to.map(encodeURIComponent).join(',')+'?subject='+encodeURIComponent('Reminder matrimonio '+nomiSposi(w)+' · '+dlong(w.data))+'&body='+encodeURIComponent(body);
 }
@@ -700,7 +714,7 @@ function bindTeam(){
   function rerender(){var y=window.scrollY;m.innerHTML=viewTeam();bindTeam();window.scrollTo(0,y)}
   function sv(w){syncFinito(w);persist(w);rerender()}
   m.querySelectorAll('[data-tmail]').forEach(function(el){el.addEventListener('change',function(){S.set.teamMail=S.set.teamMail||{};S.set.teamMail[el.dataset.tmail]=el.value.trim();persistSet();rerender()})});
-  m.querySelectorAll('[data-tt]').forEach(function(b){b.addEventListener('click',function(){var a=b.dataset.tt.split('|');var w=byId(a[0]);if(!w)return;var s=w.servizi[+a[1]];s.team=s.team||[];var ix=s.team.indexOf(a[2]);if(ix>=0)s.team.splice(ix,1);else{if(s.k==='video'&&s.team.length>=maxVideo(s)){toast(maxVideo(s)===2?'Videomaker: massimo 2 (Video Premium)':'Videomaker: massimo 1, 2 solo con Video Premium');return}s.team.push(a[2])}sv(w)})});
+  m.querySelectorAll('[data-tt]').forEach(function(b){b.addEventListener('click',function(){var a=b.dataset.tt.split('|');var w=byId(a[0]);if(!w)return;var s=w.servizi[+a[1]];s.team=s.team||[];var ix=s.team.indexOf(a[2]);if(ix>=0)s.team.splice(ix,1);else{if(s.k==='video'&&s.team.length>=maxVideo(s)){toast(maxVideo(s)===2?'Videomaker: massimo 2 (Video Premium)':'Videomaker: massimo 1, 2 solo con Video Premium');return}s.team.push(a[2]);mailAssign(w,s,a[2])}sv(w)})});
   m.querySelectorAll('[data-tadd]').forEach(function(b){b.addEventListener('click',function(){
     var a=b.dataset.tadd.split('|');var cell=b.parentNode;b.remove();var i=document.createElement('input');i.placeholder='Nome';i.style.width='110px';i.style.padding='3px 8px';cell.appendChild(i);i.focus();
     var done=false;function ok(){if(done)return;done=true;var n=i.value.trim();var w=byId(a[0]);if(n&&w){var s=w.servizi[+a[1]];s.team=s.team||[];if(s.k==='video'&&s.team.indexOf(n)<0&&s.team.length>=maxVideo(s)){toast('Videomaker: massimo '+maxVideo(s));rerender();return}if(S.set.team.indexOf(n)<0){S.set.team.push(n);persistSet()}if(s.team.indexOf(n)<0)s.team.push(n);sv(w)}else rerender()}
