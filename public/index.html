@@ -846,7 +846,7 @@ function itemW(w,right,html){
 /* ---------- elenco ---------- */
 function viewList(){
   var out='<div class="top"><div><h1>Matrimoni</h1><p class="sub">Tutti i matrimoni, per data</p></div><a class="btn pri" href="#matrimonio-nuovo" id="newTop" style="background:#d93025;border-color:#d93025;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.06em">CREA CONTRATTO</a></div>';
-  out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, chiesa, ristorante" value="'+esc(S.q)+'">'
+  out+='<div class="row" style="margin-bottom:14px"><input class="search" id="q" type="search" placeholder="Cerca sposi, celebrazione, ristorante" value="'+esc(S.q)+'">'
    +'<div class="tabs" id="flt">'+[['tutti','Tutti'],['con','Con contratto'],['senza','Senza contratto'],['arrivo','In arrivo'],['lavoro','In lavorazione'],['consegnato','Consegnati']].map(function(f){return '<button class="chip'+(S.filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>'}).join('')+'</div></div>';
   var q=S.q.toLowerCase();
   var rows=conf().filter(function(w){
@@ -900,7 +900,7 @@ function viewW(w){
    +inp('email','Social e mail','s9','text',w.email)
    +'<label class="s3">Consenso condivisione<select data-p="condivisione"><option value=""'+(w.condivisione===''?' selected':'')+'>Da raccogliere</option><option value="si"'+(w.condivisione==='si'?' selected':'')+'>Sì</option><option value="no"'+(w.condivisione==='no'?' selected':'')+'>No</option></select></label></div></div>';
   out+='<div class="card sect"><h2>Cerimonia e ricevimento</h2><div class="f">'
-   +inp('chiesa.nome','Chiesa','s6','text',w.chiesa.nome)+inp('chiesa.citta','Città','s4','text',w.chiesa.citta)+inp('chiesa.prov','Prov','s2','text',w.chiesa.prov)
+   +inp('chiesa.nome','Celebrazione','s6','text',w.chiesa.nome)+inp('chiesa.citta','Città','s4','text',w.chiesa.citta)+inp('chiesa.prov','Prov','s2','text',w.chiesa.prov)
    +inp('ristorante.nome','Ristorante','s6','text',w.ristorante.nome)+inp('ristorante.citta','Città','s4','text',w.ristorante.citta)+inp('ristorante.prov','Prov','s2','text',w.ristorante.prov)
    +'</div></div>';
   // appuntamenti
@@ -946,7 +946,7 @@ function viewW(w){
    +'<label class="s12">Note<textarea data-p="note">'+esc(w.note)+'</textarea></label></div></div>';
   // calendario
   out+='<div class="card sect"><h2>Google Calendar</h2><div class="cal"><b>MATRIMONIO</b><div class="hint" style="margin-top:4px">'+esc(dlong(w.data)||'data da inserire')+' · tutto il giorno · rosso pomodoro</div>'
-   +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Chiesa '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
+   +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Celebrazione '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span><button class="btn" id="attBtn">Rimetti in attesa di conferma</button>')+'</div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+(w.calEventId?'Aggiorna evento in Google Calendar':'Crea evento in Google Calendar')+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il pulsante crea l\'evento, genera il contratto, lo salva nel Drive, lo invia all\'email degli sposi e lo allega all\'evento.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
   return out;
@@ -1100,7 +1100,7 @@ function bindSet(){
   document.querySelectorAll('[data-rm]').forEach(function(b){b.addEventListener('click',function(){S.set.team.splice(+b.dataset.rm,1);persistSet();$('#main').innerHTML=viewSet();bindSet()})});
   $('#addMember').addEventListener('click',function(){var v=$('#newMember').value.trim();if(!v)return;if(S.set.team.indexOf(v)<0)S.set.team.push(v);persistSet();$('#main').innerHTML=viewSet();bindSet()});
   $('#csv').addEventListener('click',function(){
-    var rows=[['Pratica','Data','Sposo','Sposa','Chiesa','Ristorante','Totale','Caparra confirmatoria','Sconti','Saldo','Stato']];
+    var rows=[['Pratica','Data','Sposo','Sposa','Celebrazione','Ristorante','Totale','Caparra confirmatoria','Sconti','Saldo','Stato']];
     conf().forEach(function(w){rows.push([lab(w),w.data,w.sposo.nome,w.sposa.nome,w.chiesa.nome,w.ristorante.nome,totale(w),acconti(w),sconti(w),saldo(w),statoW(w).t])});
     var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
     save('matrimoni.csv',txt);
@@ -1161,7 +1161,7 @@ async function makePdf(w,mail,silent){
     y+=64;
     function pair(title,p){T(M,y,title,{b:1,z:7,c:acc});y+=10;field(M,y,CW*.6,'Nome',p.nome);field(M+CW*.6,y,CW*.4,'Telefono',p.tel);field(M,y+27,CW*.6,'Via',p.via);field(M+CW*.6,y+27,CW*.3,'Città',p.citta);field(M+CW*.9,y+27,CW*.1,'Prov',p.prov);y+=57}
     pair('SPOSO',w.sposo);pair('SPOSA',w.sposa);
-    field(M,y,CW*.48,'Cerimonia',[w.chiesa.nome,w.chiesa.citta].filter(Boolean).join(' · ')+(w.chiesa.prov?' ('+w.chiesa.prov+')':''),24,acc);
+    field(M,y,CW*.48,'Celebrazione',[w.chiesa.nome,w.chiesa.citta].filter(Boolean).join(' · ')+(w.chiesa.prov?' ('+w.chiesa.prov+')':''),24,acc);
     field(M+CW*.52,y,CW*.48,'Ricevimento',[w.ristorante.nome,w.ristorante.citta].filter(Boolean).join(' · ')+(w.ristorante.prov?' ('+w.ristorante.prov+')':''),24,acc);
     y+=28;field(M,y,CW,'Social e mail',w.email,24,acc);y+=36;
     T(M,y,'SERVIZI',{b:1,z:7,c:acc});y+=10;
