@@ -1152,7 +1152,7 @@ async function makePdf(w,mail,silent){
     T(M,y,RECESSO[0],{b:1,z:9});y+=13;para(RECESSO[1]);y+=40;
     var x2=M+CW/2+10,hw=CW/2-10;
     hl(M,M+hw,y);hl(x2,W-M,y);T(M,y+4,'Firma sposo',{z:7.5,c:mut});T(x2,y+4,'Firma sposa',{z:7.5,c:mut});y+=54;
-    T(M,y-8,'Luogo e data ________________________',{z:8.5});hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
+    T(M,y-8,'Luogo e data  Travagliato, '+dlong(w.contrattoData||todayStr()),{b:1,z:8.5});hl(M,M+CW/2-20,y-1);hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
     if(mail){await mailContract(w,nome,bytes);return}
