@@ -729,8 +729,8 @@ function bindListino(){
   m.querySelectorAll('[data-addl]').forEach(function(b){b.addEventListener('click',function(){S.listino.push({cat:b.dataset.addl,nome:'',desc:'',prezzo:0});persistListino();m.innerHTML=viewListino();bindListino();var ins=m.querySelectorAll('[data-li$=".nome"]');if(ins.length){var f=null;S.listino.forEach(function(x,i){if(x===S.listino[S.listino.length-1])f=m.querySelector('[data-li="'+i+'.nome"]')});if(f)f.focus()}})});
 }
 /* ---------- amministrazione ---------- */
-var CATS=[['foto','Foto'],['video','Video'],['share','Share Love'],['extra','Extra']];
-function catOf(k){return k==='video'?'video':k==='share'?'share':(k==='foto'||k==='fotolibro'||k==='album')?'foto':'extra'}
+var CATS=[['foto','Foto'],['album','Album genitori'],['video','Video'],['share','Share Love'],['extra','Extra']];
+function catOf(k){return k==='video'?'video':k==='share'?'share':k==='album'?'album':(k==='foto'||k==='fotolibro')?'foto':'extra'}
 function admData(list){
   var c={};CATS.forEach(function(x){c[x[0]]={tot:0,inc:0,sco:0}});
   var T={tot:0,inc:0,sco:0};
@@ -895,6 +895,7 @@ function bindW(w){
     el.addEventListener('change',function(){
       var a=el.dataset.sp.split('.');var s=w.servizi[+a[0]];var f=a[1];
       if(el.type==='checkbox'){s[f]=el.checked;
+        if(!el.checked){var df=SERVIZI.filter(function(x){return x.k===s.k})[0];s.desc=df?df.desc:'';s.prezzo=0;s.team=[];s.stato='da_fare';s.link=''}
         if(el.checked&&(s.k==='foto'||s.k==='fotolibro')){var o=s.k==='foto'?'fotolibro':'foto';w.servizi.forEach(function(x){if(x.k===o&&x.attivo){x.attivo=false;toast(svcLabel(s.k)+' e '+svcLabel(o)+' non si possono scegliere insieme: tolto '+svcLabel(o))}})}
         changed(true);return}
       if(f==='prezzo'){s[f]=num(el.value);changed(true);return}
