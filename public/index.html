@@ -1001,6 +1001,15 @@ var CLAUSOLE=[
 ['7. Consenso all’uso promozionale delle immagini','Gli sposi possono autorizzare l’uso di estratti del lavoro (foto e video) sul sito, sui social e su materiale promozionale del titolare. Il consenso è facoltativo, separato dal contratto e non condiziona il servizio. Si può revocare in ogni momento scrivendo a info@fotopier.com; la revoca vale per gli usi futuri.']];
 var RECESSO=['8. Recesso e annullamento dell’evento','Se gli sposi annullano il servizio meno di tre mesi prima della data del matrimonio, sono tenuti a corrispondere al fotografo il 50% del corrispettivo pattuito, a titolo di penale. Se l’annullamento avviene con più di tre mesi di anticipo, resta dovuta la caparra confirmatoria già versata. La penale non si applica in caso di gravi e documentati motivi di forza maggiore, come lutto in famiglia stretta, grave malattia o infortunio degli sposi o dei loro familiari stretti. In caso di rinvio dell’evento, le parti concordano una nuova data, compatibilmente con la disponibilità del fotografo.'];
 
+async function mailContract(w,nome,bytes){
+  try{var bn='';for(var q=0;q<bytes.length;q+=32768)bn+=String.fromCharCode.apply(null,bytes.subarray(q,q+32768));
+    toast('Invio in corso a '+w.email+'…');
+    var mr=await fetch('/api/mail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:w.email,nome:nome,pdf:btoa(bn),subject:'Contratto servizio fotografico matrimonio – '+nomiSposi(w),text:'Buongiorno,\n\nin allegato trovate la copia del contratto per il servizio del vostro matrimonio.\n\nPer qualsiasi dubbio siamo a disposizione.\n\nA presto,\nFoto Pier'})});
+    var mj=await mr.json().catch(function(){return {}});
+    if(mr.ok){w.contrattoInviato=todayStr()+' a '+w.email;persist(w);toast('Contratto inviato a '+w.email)}
+    else toast('Invio non riuscito: '+(mj.error||mr.status));
+  }catch(e){toast('Invio non riuscito')}
+}
 async function makePdf(w,mail){
   if(!window.PDFLib){toast('Libreria PDF non caricata, riprova tra un attimo');return}
   try{
@@ -1073,15 +1082,7 @@ async function makePdf(w,mail){
     T(M,y-8,'Luogo e data ________________________',{z:8.5});hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
-    if(mail){
-      var bn='';for(var q=0;q<bytes.length;q+=32768)bn+=String.fromCharCode.apply(null,bytes.subarray(q,q+32768));
-      toast('Invio in corso a '+w.email+'…');
-      var mr=await fetch('/api/mail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:w.email,nome:nome,pdf:btoa(bn),subject:'Contratto servizio fotografico matrimonio – '+nomiSposi(w),text:'Buongiorno,\n\nin allegato trovate la copia del contratto per il servizio del vostro matrimonio.\n\nPer qualsiasi dubbio siamo a disposizione.\n\nA presto,\nFoto Pier'})});
-      var mj=await mr.json().catch(function(){return {}});
-      if(mr.ok){w.contrattoInviato=todayStr()+' a '+w.email;persist(w);toast('Contratto inviato a '+w.email)}
-      else toast('Invio non riuscito: '+(mj.error||mr.status));
-      return;
-    }
+    if(mail){await mailContract(w,nome,bytes);return}
     await save(nome,bytes);
     w.contrattoGenerato=todayStr();persist(w);
     try{var bin='';for(var k=0;k<bytes.length;k+=32768)bin+=String.fromCharCode.apply(null,bytes.subarray(k,k+32768));
@@ -1090,6 +1091,7 @@ async function makePdf(w,mail){
       if(dr.ok){toast('Contratto salvato nel Drive in '+dj.cartella)}
       else if(dr.status!==500||!/non configurato/.test(dj.error||'')){toast('Salvataggio su Drive non riuscito: '+(dj.error||dr.status))}
     }catch(e){}
+    if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((w.email||'').trim())&&!(w.contrattoInviato||'').endsWith(' a '+w.email.trim()))await mailContract(w,nome,bytes);
     if(w.calEventId&&w.data){try{await calSync(w);persist(w);toast('Contratto generato e evento in calendario aggiornato')}catch(e){}}
   }catch(e){toast('Creazione PDF non riuscita')}
 }
