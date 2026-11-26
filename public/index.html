@@ -1148,7 +1148,7 @@ function bindW(w){
   m.querySelectorAll('.savew').forEach(function(b){b.addEventListener('click',function(){
     try{document.activeElement&&document.activeElement.blur()}catch(e){}
     setTimeout(async function(){
-      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713');if(w.contrattoGenerato&&w!==S.bozza)makePdf(w,false,true,'drive');location.hash='dashboard'}
+      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713');if((w.contrattoGenerato||caparreNuove(w).length)&&w!==S.bozza)makePdf(w,false,true,'drive');location.hash='dashboard'}
       catch(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))}},80)})});
   function changed(rerender){syncFinito(w);S._shown=JSON.stringify(w);persist(w);if(rerender){var y=window.scrollY;m.innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
   m.querySelectorAll('[data-p]').forEach(function(el){
@@ -1221,7 +1221,7 @@ function bindW(w){
     }
   });
   $('#cont').addEventListener('click',function(){w.contanti=!w.contanti;if(!w.contanti)delete w.contanti;changed(true)});
-  $('#addP').addEventListener('click',function(){w.pagamenti.push({tipo:'acconto',data:todayStr(),importo:0,metodo:'',ricevuto:'',fatturato:false});changed(true)});
+  $('#addP').addEventListener('click',function(){w.pagamenti.push({tipo:'acconto',data:todayStr(),importo:0,metodo:'',ricevuto:'',fatturato:false,ts:Date.now()});changed(true)});
   if(w===S.bozza){
     $('#okBozza').addEventListener('click',function(){
       if(!((w.sposo.nome||'').trim()||(w.sposa.nome||'').trim())){toast('Inserisci almeno il nome di uno dei due sposi');return}
@@ -1326,6 +1326,18 @@ var CLAUSOLE=[
 ['7. Consenso all’uso promozionale delle immagini','Gli sposi possono autorizzare l’uso di estratti del lavoro (foto e video) sul sito, sui social e su materiale promozionale del titolare. Il consenso è facoltativo, separato dal contratto e non condiziona il servizio. Si può revocare in ogni momento scrivendo a info@fotopier.com; la revoca vale per gli usi futuri.']];
 var RECESSO=['8. Recesso e annullamento dell’evento','Se gli sposi annullano il servizio meno di tre mesi prima della data del matrimonio, sono tenuti a corrispondere al fotografo il 50% del corrispettivo pattuito, a titolo di penale. Se l’annullamento avviene con più di tre mesi di anticipo, resta dovuta la caparra confirmatoria già versata. La penale non si applica in caso di gravi e documentati motivi di forza maggiore, come lutto in famiglia stretta, grave malattia o infortunio degli sposi o dei loro familiari stretti. In caso di rinvio dell’evento, le parti concordano una nuova data, compatibilmente con la disponibilità del fotografo.'];
 
+function caparreNuove(w){return (w.pagamenti||[]).filter(function(p){return p.tipo!=='sconto'&&p.ts&&!p.mailed&&num(p.importo)>0})}
+async function caparraMail(w,nome,bytes){
+  var nu=caparreNuove(w);if(!nu.length)return;
+  var em=mailOf(w);if(!em){toast('Manca l\u2019email degli sposi: caparra non comunicata');return}
+  try{var bn='';for(var q=0;q<bytes.length;q+=32768)bn+=String.fromCharCode.apply(null,bytes.subarray(q,q+32768));
+    var righe=nu.map(function(p){return '- '+eur(num(p.importo))+' del '+dshort(p.data)+(p.metodo?' ('+p.metodo+')':'')}).join('\n');
+    var mr=await fetch('/api/mail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:em,nome:nome,pdf:btoa(bn),subject:'Caparra ricevuta \u2013 '+nomiSposi(w),text:'Buongiorno,\n\nconfermiamo di aver ricevuto la caparra confirmatoria:\n'+righe+'\n\nIn allegato trovate il contratto aggiornato.\n\nGrazie e a presto,\nFoto Pier'})});
+    var mj=await mr.json().catch(function(){return {}});
+    if(mr.ok){nu.forEach(function(p){p.mailed=true});persist(w);toast('Caparra comunicata a '+em)}
+    else toast('Email caparra non inviata: '+(mj.error||mr.status))
+  }catch(e){toast('Email caparra non inviata')}
+}
 async function mailContract(w,nome,bytes){
   try{var bn='';for(var q=0;q<bytes.length;q+=32768)bn+=String.fromCharCode.apply(null,bytes.subarray(q,q+32768));
     toast('Invio in corso a '+mailOf(w)+'…');
@@ -1425,7 +1437,8 @@ async function makePdf(w,mail,silent,mode,winArg){
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
     if(mode==='preview'){if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}else toast('Consenti le finestre popup per vedere l\u2019anteprima');return}
-    if(mode==='drive'){try{var b2='';for(var k2=0;k2<bytes.length;k2+=32768)b2+=String.fromCharCode.apply(null,bytes.subarray(k2,k2+32768));var r2=await fetch('/api/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({anno:(w.data||'').slice(0,4)||w.anno,nome:nome,pdf:btoa(b2)})});var j2=await r2.json();if(r2.ok){if(j2.link&&j2.link!==w.contrattoLink){w.contrattoLink=j2.link;persist(w)}toast('Contratto aggiornato nel Drive')}else toast('Drive non aggiornato: '+(j2.error||r2.status))}catch(e){toast('Drive non aggiornato')}return}
+    if(mode==='drive'){try{if(!w.contrattoGenerato)throw 0;var b2='';for(var k2=0;k2<bytes.length;k2+=32768)b2+=String.fromCharCode.apply(null,bytes.subarray(k2,k2+32768));var r2=await fetch('/api/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({anno:(w.data||'').slice(0,4)||w.anno,nome:nome,pdf:btoa(b2)})});var j2=await r2.json();if(r2.ok){if(j2.link&&j2.link!==w.contrattoLink){w.contrattoLink=j2.link;persist(w)}toast('Contratto aggiornato nel Drive')}else toast('Drive non aggiornato: '+(j2.error||r2.status))}catch(e){}
+      await caparraMail(w,nome,bytes);return}
     if(mail&&!(await previewPdf(bytes,nome,mail,silent))){try{if(win)win.close()}catch(x){}toast('Annullato: non è stato salvato né inviato nulla');return}
     if(mail){await mailContract(w,nome,bytes);return}
     if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}
