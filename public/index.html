@@ -749,7 +749,10 @@ function albumPill(w){var a=ALBUM_ST.filter(function(x){return x[0]===w.album})[
 var VIDEO_ST=[['lavorazione','IN LAVORAZIONE','#ffe3a0','#6b4a00'],['controllo','IN CONTROLLO','#c5e3f7','#17619c'],['no','VIDEO NO','#ffd0d0','#b00020'],['ok','VIDEO OK','#d4edc4','#2d6a1f'],['consegna','VIDEO IN CONSEGNA','#e6d3f5','#6a3a96'],['consegnato','VIDEO CONSEGNATO','#12794a','#ffffff']];
 function syncVideo(w){var v=(w.servizi||[]).filter(function(x){return x.k==='video'&&x.attivo})[0];if(!v)return;var f=w.videoFase||'';v.stato=!f?'da_fare':f==='consegnato'?'consegnato':(f==='ok'||f==='consegna')?'finito':'in_corso';syncFinito(w)}
 function videoPill(w){var a=VIDEO_ST.filter(function(x){return x[0]===w.videoFase})[0];return a?'<span class="pill" style="background:'+a[2]+';color:'+a[3]+';border-color:transparent">'+esc(a[1])+'</span>':''}
-function prontiW(w){var o=[];if(w.videoFase==='ok')o.push('Video OK');if(w.album==='solo_foto')o.push('Foto pronte');if(w.album==='impaginato')o.push('Album impaginato');return o}
+function prontiW(w){var hv=(w.servizi||[]).some(function(x){return x.k==='video'&&x.attivo}),hf=(w.servizi||[]).some(function(x){return x.k==='foto'&&x.attivo});
+  var vOk=w.videoFase==='ok',fOk=w.album==='solo_foto'||w.album==='impaginato';
+  if(hv&&!vOk)return [];if(hf&&!fOk)return [];if(!hv&&!hf)return [];
+  var o=[];if(hv)o.push('Video OK');if(hf)o.push(w.album==='impaginato'?'Album impaginato':'Foto pronte');return o}
 function prontoBox(w){var p=prontiW(w);return p.length?'<div class="card sect" style="background:#e6f4dc;border-color:#2d6a1f"><b style="color:#2d6a1f">✅ PRONTO · CONTATTARE GLI SPOSI</b><div class="hint" style="margin-top:4px">'+p.map(esc).join(' · ')+'</div></div>':''}
 function prontoPill(w){return prontiW(w).length?'<span class="pill" style="background:#2d6a1f;color:#fff;border-color:transparent">CONTATTARE GLI SPOSI</span>':''}
 /* ---------- scheda lavorazione ---------- */
