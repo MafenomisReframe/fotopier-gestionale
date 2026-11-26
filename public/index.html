@@ -546,7 +546,7 @@ function dayPop(ds){
   var kd=function(e){if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
   m.addEventListener('click',function(e){if(e.target===m)close()});document.getElementById('dayX').addEventListener('click',close);
   m.querySelectorAll('a[href^="#matrimonio"]').forEach(function(a){a.addEventListener('click',close)});
-  m.querySelectorAll('[data-addf]').forEach(function(bt){bt.addEventListener('click',function(){close();openFcard(+bt.dataset.addf,ds,FK)})});
+  m.querySelectorAll('[data-addf]').forEach(function(bt){bt.addEventListener('click',function(){close();if(+bt.dataset.addf===2){S._ctDate=ds;location.hash='matrimonio-nuovo';return}openFcard(+bt.dataset.addf,ds,FK)})});
   var apOf=function(k){var q=k.split('|'),w=byId(q[0]);return w?{w:w,a:(w.appuntamenti||[])[+q[1]],i:+q[1]}:null};
   var apTimes=function(a){var o=a.ora,d=a.data;if(o){var hh=+o.slice(0,2),mm=o.slice(3,5);return {startTime:d+'T'+o+':00',endTime:d+'T'+two(Math.min(hh+1,23))+':'+mm+':00',allDay:false}}
     var st=parseD(d),en=new Date(st.getFullYear(),st.getMonth(),st.getDate()+1),iso=function(x){return x.getFullYear()+'-'+two(x.getMonth()+1)+'-'+two(x.getDate())};
@@ -1271,7 +1271,7 @@ function linkPop(draft){
 function nuovo(){
   var anno=new Date().getFullYear();var mx=0;
   S.weddings.forEach(function(w){if(w.anno===anno&&w.numero>mx)mx=w.numero});
-  var w=emptyWedding(anno,mx+1);w.id=anno+'-'+Date.now().toString(36);S.bozza=w;
+  var w=emptyWedding(anno,mx+1);w.id=anno+'-'+Date.now().toString(36);if(S._ctDate){w.contrattoData=S._ctDate;S._ctDate=null}S.bozza=w;
   location.hash='matrimonio-'+w.id;
 }
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('#newTop');if(a){e.preventDefault();nuovo()}});
