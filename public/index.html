@@ -1210,6 +1210,7 @@ function bindW(w){
     var btn=$('#calBtn'),msg=$('#calMsg');
     function say(t){msg.textContent=t}
     if(!w.data){return}
+    if(w===S.bozza){if(!((w.sposo.nome||'').trim()||(w.sposa.nome||'').trim())){say('Inserisci almeno il nome di uno dei due sposi');return}S.bozza=null;S.weddings.push(w);sortW&&sortW();persist(w)}
     btn.disabled=true;say('Creo l\u2019evento…');
     var cw=null;try{cw=window.open('','_blank')}catch(e){}
     try{
