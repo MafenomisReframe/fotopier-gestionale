@@ -758,16 +758,32 @@ function viewLavW(w){
   var out='<div class="top"><div><a href="#lavorazione" class="hint">← Lavorazione</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">'+esc(dlong(w.data))+'</p></div><div class="row" style="gap:6px">'+timerPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>';
   out+=prontoBox(w);
   var vidI=-1;w.servizi.forEach(function(x,i){if(x.k==='video'&&x.attivo)vidI=i});
-  if(vidI>=0)out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div>'
-   +'<div class="lwr" style="grid-template-columns:1fr"><input data-lv="'+vidI+'.link" value="'+esc(w.servizi[vidI].link||'')+'" placeholder="Link Mega video https://mega.nz/..."></div></div>';
+  if(vidI>=0)out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div></div>';
   var fotoI=-1;w.servizi.forEach(function(x,i){if(x.k==='foto'&&x.attivo)fotoI=i});
   if(fotoI>=0){var alb=hasAlbum(w);var opts=alb?ALBUM_ST.filter(function(x){return x[0]!=='solo_foto'}):ALBUM_ST.filter(function(x){return x[0]==='lavorazione'||x[0]==='solo_foto'});
     out+='<div class="card sect"><h2>'+(alb?'Foto e album':'Foto')+'</h2><div class="row" style="gap:12px;align-items:center"><select data-al="1" style="max-width:340px"><option value="">/</option>'+opts.map(function(x){return '<option value="'+x[0]+'"'+(w.album===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+albumPill(w)+'</div>'
-     +'<div class="lwr" style="grid-template-columns:1fr"><input data-lv="'+fotoI+'.link" value="'+esc(w.servizi[fotoI].link||'')+'" placeholder="Link Mega foto https://mega.nz/..."></div></div>';}
+     +'</div>';}
+  out+='<div class="card sect" id="chatBox"><h2>Chat interna</h2><div id="chatList" style="max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>'
+   +'<div class="row" style="gap:8px"><select id="chatWho" style="width:auto"><option>Simone</option><option>Pier</option></select><input id="chatIn" placeholder="Scrivi un messaggio\u2026" style="flex:1;min-width:0"><button class="btn pri" id="chatGo">Invia</button></div></div>';
   return out;
 }
+function chatPath(w){return 'impostazioni/chat-'+String(w.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,34)}
+function chatRender(){var l=document.getElementById('chatList');if(!l)return;var ms=S._chatMsgs||[];
+  l.innerHTML=ms.length?ms.map(function(m){var d=new Date(m.ts),mine=m.da===((document.getElementById('chatWho')||{}).value);
+    return '<div style="align-self:'+(mine?'flex-end':'flex-start')+';max-width:85%;background:'+(mine?'#2e9d5b33':'var(--card,#222)')+';border:1px solid var(--line);border-radius:10px;padding:6px 10px"><div class="hint" style="font-size:11px">'+esc(m.da)+' \u00b7 '+two(d.getDate())+'/'+two(d.getMonth()+1)+' '+two(d.getHours())+':'+two(d.getMinutes())+'</div><div style="white-space:pre-wrap">'+esc(m.t)+'</div></div>'}).join(''):'<div class="empty">Ancora nessun messaggio.</div>';
+  l.scrollTop=l.scrollHeight}
+function bindChat(w){
+  if(S._chatUn){try{S._chatUn()}catch(e){}S._chatUn=null}
+  var who=document.getElementById('chatWho'),inp=document.getElementById('chatIn'),go=document.getElementById('chatGo');if(!who||!S.db)return;
+  try{var sv=localStorage.getItem('chatWho');if(sv)who.value=sv}catch(e){}
+  who.addEventListener('change',function(){try{localStorage.setItem('chatWho',who.value)}catch(e){}chatRender()});
+  S._chatMsgs=[];
+  S._chatUn=S.db.doc(chatPath(w)).onSnapshot(function(d){S._chatMsgs=(d.exists&&Array.isArray(d.data().m))?d.data().m:[];chatRender()},function(){});
+  function send(){var t=inp.value.trim();if(!t)return;var ms=(S._chatMsgs||[]).slice();ms.push({da:who.value,t:t.slice(0,2000),ts:Date.now()});ms=ms.slice(-500);
+    S._chatMsgs=ms;inp.value='';chatRender();S.db.doc(chatPath(w)).set({m:ms}).catch(function(){toast('Messaggio non salvato')})}
+  go.addEventListener('click',send);inp.addEventListener('keydown',function(e){if(e.key==='Enter')send()});chatRender()}
 function bindLavW(w){
-  var m=$('#main');
+  var m=$('#main');bindChat(w);
   m.querySelectorAll('[data-vf]').forEach(function(el){el.addEventListener('change',function(){if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=w.videoFase||'';return}w.videoFase=el.value;if(!el.value)delete w.videoFase;syncVideo(w);persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
   m.querySelectorAll('[data-al]').forEach(function(el){el.addEventListener('change',function(){if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=w.album||'';return}w.album=el.value;if(!el.value)delete w.album;syncFoto(w);persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
   m.querySelectorAll('[data-lv]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.lv.split('.');var s=w.servizi[+a[0]];
@@ -816,7 +832,6 @@ function viewTeam(){
        +'<div class="team">'+team.map(function(t){return '<button class="chip'+((s.team||[]).indexOf(t)>=0?' on':'')+'" data-tt="'+esc(w.id)+'|'+i+'|'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'<button class="chip add" data-tadd="'+esc(w.id)+'|'+i+'">+ aggiungi</button></div>'
        +'<select data-ts="'+esc(w.id)+'|'+i+'|stato">'+STATI.map(function(x){return '<option value="'+x[0]+'"'+(s.stato===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'
        +'<a class="btn sm" href="'+mailReminder(w,[s])+'">✉ Reminder</a>'
-       +((s.k==='foto'||s.k==='video'||s.k==='fotolibro')?'<div class="lk"><input data-ts="'+esc(w.id)+'|'+i+'|link" value="'+esc(s.link||'')+'" placeholder="Link Mega https://mega.nz/..." style="width:100%"></div>':'')
        +'</div>'}).join('')+'</div>';
   });
   out+='<p class="hint" style="margin:12px 0 0">Il reminder apre la tua posta con testo e destinatari già pronti: controlli e premi invia. Consegnato si può segnare solo con saldo a zero.</p>';
