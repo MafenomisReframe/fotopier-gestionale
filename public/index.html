@@ -714,7 +714,8 @@ function svcRows(w,onlyOpen){
 }
 function lavCard(w){
   var st=statoW(w);
-  return '<a class="lw" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
+  var sn=!(w.album||w.videoFase),bg=st.k!=='lavoro'?'':sn?'background:rgba(217,48,37,.22);border-color:#d93025':'background:rgba(255,200,0,.2);border-color:#d9a900';
+  return '<a class="lw" style="'+bg+'" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
 }
 function viewLav(){
   var all=conf().filter(function(w){return inYr(w)&&!w.lavEsc&&w.lavorazione&&lavoriL(w).length});
