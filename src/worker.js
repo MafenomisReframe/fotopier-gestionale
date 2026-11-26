@@ -175,6 +175,17 @@ async function driveUpload(env, b) {
     folder = j.id;
   }
   const bin = Uint8Array.from(atob(b.pdf), c => c.charCodeAt(0));
+  // se il contratto esiste già nella cartella, lo sovrascrivo (stesso file, stesso link)
+  const qf = "name='" + nome.replace(/'/g, "\\'") + "' and '" + folder + "' in parents and trashed=false";
+  const rf = await fetch('https://www.googleapis.com/drive/v3/files?fields=files(id,webViewLink)&q=' + encodeURIComponent(qf), { headers: H });
+  const jf = await rf.json();
+  const old = rf.ok && jf.files && jf.files[0];
+  if (old) {
+    const ru = await fetch('https://www.googleapis.com/upload/drive/v3/files/' + old.id + '?uploadType=media&fields=id,webViewLink', { method: 'PATCH', headers: { ...H, 'Content-Type': 'application/pdf' }, body: bin });
+    const ju = await ru.json();
+    if (!ru.ok) return json({ error: (ju.error && ju.error.message) || 'Errore Drive', code: ru.status }, 502);
+    return json({ ok: true, id: ju.id, link: ju.webViewLink, cartella: fname, aggiornato: true });
+  }
   const bd = 'fpb' + Date.now();
   const enc = new TextEncoder();
   const head = enc.encode('--' + bd + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify({ name: nome, parents: [folder] }) + '\r\n--' + bd + '\r\nContent-Type: application/pdf\r\n\r\n');

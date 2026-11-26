@@ -1148,7 +1148,7 @@ function bindW(w){
   m.querySelectorAll('.savew').forEach(function(b){b.addEventListener('click',function(){
     try{document.activeElement&&document.activeElement.blur()}catch(e){}
     setTimeout(async function(){
-      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713');location.hash='dashboard'}
+      try{renumber(w);sortW();clearTimeout(saveTimers[w.id]);if(S.db)await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713');if(w.contrattoGenerato&&w!==S.bozza)makePdf(w,false,true,'drive');location.hash='dashboard'}
       catch(e){toast('Salvataggio non riuscito: '+(e&&e.message||'errore'))}},80)})});
   function changed(rerender){syncFinito(w);S._shown=JSON.stringify(w);persist(w);if(rerender){var y=window.scrollY;m.innerHTML=viewW(w);bindW(w);window.scrollTo(0,y)}}
   m.querySelectorAll('[data-p]').forEach(function(el){
@@ -1423,6 +1423,7 @@ async function makePdf(w,mail,silent,mode,winArg){
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
     if(mode==='preview'){if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}else toast('Consenti le finestre popup per vedere l\u2019anteprima');return}
+    if(mode==='drive'){try{var b2='';for(var k2=0;k2<bytes.length;k2+=32768)b2+=String.fromCharCode.apply(null,bytes.subarray(k2,k2+32768));var r2=await fetch('/api/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({anno:(w.data||'').slice(0,4)||w.anno,nome:nome,pdf:btoa(b2)})});var j2=await r2.json();if(r2.ok){if(j2.link&&j2.link!==w.contrattoLink){w.contrattoLink=j2.link;persist(w)}toast('Contratto aggiornato nel Drive')}else toast('Drive non aggiornato: '+(j2.error||r2.status))}catch(e){toast('Drive non aggiornato')}return}
     if(mail&&!(await previewPdf(bytes,nome,mail,silent))){try{if(win)win.close()}catch(x){}toast('Annullato: non è stato salvato né inviato nulla');return}
     if(mail){await mailContract(w,nome,bytes);return}
     if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}
