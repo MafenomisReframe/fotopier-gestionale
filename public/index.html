@@ -761,6 +761,8 @@ function viewLavW(w){
     var st=statoW(w);
   var out='<div class="top"><div><a href="#lavorazione" class="hint">← Lavorazione</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">'+esc(dlong(w.data))+'</p></div><div class="row" style="gap:6px">'+timerPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>';
   out+=prontoBox(w);
+  var sv=attivi(w);
+  out+='<div class="card sect"><h2>Servizi del matrimonio</h2>'+(sv.length?sv.map(function(x){return '<div class="svr" style="display:flex;gap:10px;padding:4px 0"><span class="nm" style="min-width:140px"><b>'+esc(svcLabel(x.k))+'</b></span><span>'+esc(x.desc||'')+'</span></div>'}).join(''):'<div class="empty">Nessun servizio scelto.</div>')+'</div>';
   var vidI=-1;w.servizi.forEach(function(x,i){if(x.k==='video'&&x.attivo)vidI=i});
   if(vidI>=0)out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div></div>';
   var fotoI=-1;w.servizi.forEach(function(x,i){if(x.k==='foto'&&x.attivo)fotoI=i});
