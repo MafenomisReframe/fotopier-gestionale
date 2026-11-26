@@ -1337,7 +1337,7 @@ function previewPdf(bytes,nome,mail,silent){
     var url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
     var o=document.createElement('div');o.id='pdfPrev';
     o.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.82);display:flex;flex-direction:column;padding:10px;gap:8px';
-    var what=mail?'Verrà inviata la copia all\u2019email degli sposi.':silent?'Verrà salvato nel Drive, inviato agli sposi e allegato all\u2019evento.':'Verrà scaricato, salvato nel Drive e inviato agli sposi, poi si apre per la stampa.';
+    var what=mail?'Verrà inviata la copia all\u2019email degli sposi.':silent?'Verrà salvato nel Drive, inviato agli sposi e allegato all\u2019evento.':'Verrà salvato nel Drive e inviato agli sposi, poi si apre per la stampa.';
     o.innerHTML='<div style="color:#fff;font-weight:700">Anteprima contratto: controlla tutto prima di procedere</div>'
       +'<iframe src="'+url+'" style="flex:1;width:100%;border:0;background:#fff;border-radius:8px"></iframe>'
       +'<div style="color:#ddd;font-size:13px">'+what+' <a href="'+url+'" target="_blank" rel="noopener" style="color:#9cf">Apri in una scheda</a></div>'
@@ -1422,7 +1422,6 @@ async function makePdf(w,mail,silent){
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
     if(!(await previewPdf(bytes,nome,mail,silent))){try{if(win)win.close()}catch(x){}toast('Annullato: non è stato salvato né inviato nulla');return}
     if(mail){await mailContract(w,nome,bytes);return}
-    if(!silent)await save(nome,bytes);
     if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}
     w.contrattoGenerato=todayStr();persist(w);
     try{var bin='';for(var k=0;k<bytes.length;k+=32768)bin+=String.fromCharCode.apply(null,bytes.subarray(k,k+32768));
