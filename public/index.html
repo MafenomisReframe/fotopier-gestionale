@@ -1075,7 +1075,7 @@ function viewW(w){
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
    +(w===S.bozza?'</div>'
-   :'<div class="row"><button class="btn pri savew" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Salva modifiche</button><button class="btn pri" id="pdf">Anteprima</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
+   :'<div class="row"><button class="btn pri" id="pdf">Anteprima</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
@@ -1125,7 +1125,6 @@ function viewW(w){
    +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Celebrazione '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span><button class="btn" id="attBtn">Rimetti in attesa di conferma</button>')+'</div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+'Salva e aggiorna contratto'+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il pulsante crea l\'evento, genera il contratto, lo salva nel Drive, lo invia all\'email degli sposi e lo allega all\'evento.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
-  if(w!==S.bozza)out+='<div class="row" style="margin:14px 0 30px"><button class="btn pri savew" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Salva modifiche</button></div>';
   return out;
 }
 function svcItems(s){return S.listino.filter(function(x){return x.cat===catOf(s.k)&&x.nome})}
@@ -1209,7 +1208,7 @@ function bindW(w){
   $('#calBtn').addEventListener('click',async function(){
     var btn=$('#calBtn'),msg=$('#calMsg');
     function say(t){msg.textContent=t}
-    if(!w.data){return}
+    if(!w.data){if(w===S.bozza){say('Inserisci la data del matrimonio');return}try{renumber(w);sortW();await S.db.doc('matrimoni/'+w.id).set(JSON.parse(JSON.stringify(w)));toast('Modifiche salvate \u2713');say('Salvato. Inserisci la data per creare l\u2019evento in calendario.')}catch(e){say('Non salvato, riprova')}return}
     if(w===S.bozza){if(!((w.sposo.nome||'').trim()||(w.sposa.nome||'').trim())){say('Inserisci almeno il nome di uno dei due sposi');return}S.bozza=null;S.weddings.push(w);sortW&&sortW();persist(w)}
     btn.disabled=true;say('Creo l\u2019evento…');
     var cw=null;try{cw=window.open('','_blank')}catch(e){}
