@@ -728,7 +728,7 @@ function viewLav(){
   var inl=all.filter(function(w){var k=statoW(w).k;return k==='lavoro'});
   var fin=all.filter(function(w){return statoW(w).k==='finito'});
   var con=all.filter(function(w){return statoW(w).k==='consegnato'});
-  inl.sort(function(a,b){return a.data.localeCompare(b.data)});
+  [inl,fin,con].forEach(function(l){l.sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')})});
   // per persona
   var per={};
   all.forEach(function(w){if(statoW(w).k==='consegnato')return;lavoriL(w).forEach(function(x){if(x.stato==='finito'||x.stato==='consegnato')return;
