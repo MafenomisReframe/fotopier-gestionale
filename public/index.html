@@ -146,8 +146,10 @@ textarea{resize:vertical;min-height:64px}
 .att i{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none;background:var(--info)}
 .att.warn i{background:var(--warn)}.att.bad i{background:var(--bad)}
 .att:hover span{color:var(--accent)}
-.lw{display:block;padding:14px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}
-.lw:first-of-type{border-top:0;padding-top:0}
+.lw{display:block;padding:14px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:inherit;background:var(--card,transparent)}
+.lwg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:12px}
+.lw .sv{font-size:13px;padding:3px 0;display:flex;gap:8px}
+.lw .sv b{min-width:112px}
 .lw:hover b{color:var(--accent)}
 .svr{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0 0;font-size:13px}
 .svr .nm{font-weight:700}
@@ -715,7 +717,10 @@ function svcRows(w,onlyOpen){
 function lavCard(w){
   var st=statoW(w);
   var sn=!(w.album||w.videoFase),bg=st.k!=='lavoro'?'':sn?'background:rgba(217,48,37,.22);border-color:#d93025':'background:rgba(255,200,0,.2);border-color:#d9a900';
-  return '<a class="lw" style="'+bg+'" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
+  var sv=attivi(w).filter(function(x){return x.k!=='share'}).map(function(x){return '<div class="sv"><b>'+esc(svcLabel(x.k))+'</b><span>'+esc(x.desc||'')+'</span></div>'}).join('');
+  return '<a class="lw" style="'+bg+'" href="#lavoro-'+esc(w.id)+'"><div style="font-size:16px;font-weight:700">'+esc(nomiSposi(w))+'</div><div class="hint" style="margin-bottom:8px">'+esc(dlong(w.data))+'</div>'
+   +'<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div>'
+   +sv+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
 }
 function viewLav(){
   var all=conf().filter(function(w){return inYr(w)&&!w.lavEsc&&w.lavorazione&&lavoriL(w).length});
@@ -736,9 +741,9 @@ function viewLav(){
   out+='<div class="card sect"><h2>Chi sta lavorando a cosa</h2>'+(names.length?'<div class="grid two" style="gap:12px">'+names.map(function(n){
     return '<div class="who"><div class="row" style="justify-content:space-between"><b>'+esc(n)+'</b><span class="pill '+(n==='Da assegnare'?'warn':'info')+'">'+per[n].length+(per[n].length===1?' lavoro aperto':' lavori aperti')+'</span></div>'
      +per[n].map(function(r){return '<a class="att" href="#lavoro-'+esc(r.w.id)+'" style="font-weight:500"><i></i><span>'+esc(nomiSposi(r.w))+' · '+esc(svcLabel(r.x.k))+' · '+esc(STATI.filter(function(t){return t[0]===r.x.stato})[0][1])+'</span></a>'}).join('')+'</div>'}).join('')+'</div>':'<div class="empty">Nessun lavoro aperto.</div>')+'</div>';
-  out+='<div class="card sect"><h2>In lavorazione · '+inl.length+'</h2>'+(inl.length?inl.map(lavCard).join(''):'<div class="empty">Nessun matrimonio in lavorazione.</div>')+'</div>';
-  out+='<div class="card sect"><h2>Finiti, da consegnare · '+fin.length+'</h2>'+(fin.length?fin.map(lavCard).join(''):'<div class="empty">Nessun lavoro finito in attesa di consegna.</div>')+'</div>';
-  out+='<div class="card sect"><h2>Consegnati · '+con.length+'</h2>'+(con.length?con.map(lavCard).join(''):'<div class="empty">Ancora nessuna consegna.</div>')+'</div>';
+  out+='<div class="card sect"><h2>In lavorazione · '+inl.length+'</h2>'+(inl.length?'<div class="lwg">'+inl.map(lavCard).join('')+'</div>':'<div class="empty">Nessun matrimonio in lavorazione.</div>')+'</div>';
+  out+='<div class="card sect"><h2>Finiti, da consegnare · '+fin.length+'</h2>'+(fin.length?'<div class="lwg">'+fin.map(lavCard).join('')+'</div>':'<div class="empty">Nessun lavoro finito in attesa di consegna.</div>')+'</div>';
+  out+='<div class="card sect"><h2>Consegnati · '+con.length+'</h2>'+(con.length?'<div class="lwg">'+con.map(lavCard).join('')+'</div>':'<div class="empty">Ancora nessuna consegna.</div>')+'</div>';
   return out;
 }
 /* ---------- stato album ---------- */
@@ -762,13 +767,15 @@ function viewLavW(w){
   var out='<div class="top"><div><a href="#lavorazione" class="hint">← Lavorazione</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">'+esc(dlong(w.data))+'</p></div><div class="row" style="gap:6px">'+timerPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>';
   out+=prontoBox(w);
   var sv=attivi(w);
-  out+='<div class="card sect"><h2>Servizi del matrimonio</h2>'+(sv.length?sv.map(function(x){return '<div class="svr" style="display:flex;gap:10px;padding:4px 0"><span class="nm" style="min-width:140px"><b>'+esc(svcLabel(x.k))+'</b></span><span>'+esc(x.desc||'')+'</span></div>'}).join(''):'<div class="empty">Nessun servizio scelto.</div>')+'</div>';
+  out+='<div class="lwg">';
+  out+='<div class="card sect" style="margin:0"><h2>Servizi del matrimonio</h2>'+(sv.length?sv.map(function(x){return '<div class="svr" style="display:flex;gap:10px;padding:4px 0"><span class="nm" style="min-width:140px"><b>'+esc(svcLabel(x.k))+'</b></span><span>'+esc(x.desc||'')+'</span></div>'}).join(''):'<div class="empty">Nessun servizio scelto.</div>')+'</div>';
   var vidI=-1;w.servizi.forEach(function(x,i){if(x.k==='video'&&x.attivo)vidI=i});
-  if(vidI>=0)out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div></div>';
+  if(vidI>=0)out+='<div class="card sect" style="margin:0"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div></div>';
   var fotoI=-1;w.servizi.forEach(function(x,i){if(x.k==='foto'&&x.attivo)fotoI=i});
   if(fotoI>=0){var alb=hasAlbum(w);var opts=alb?ALBUM_ST.filter(function(x){return x[0]!=='solo_foto'}):ALBUM_ST.filter(function(x){return x[0]==='lavorazione'||x[0]==='solo_foto'});
-    out+='<div class="card sect"><h2>'+(alb?'Foto e album':'Foto')+'</h2><div class="row" style="gap:12px;align-items:center"><select data-al="1" style="max-width:340px"><option value="">/</option>'+opts.map(function(x){return '<option value="'+x[0]+'"'+(w.album===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+albumPill(w)+'</div>'
+    out+='<div class="card sect" style="margin:0"><h2>'+(alb?'Foto e album':'Foto')+'</h2><div class="row" style="gap:12px;align-items:center"><select data-al="1" style="max-width:340px"><option value="">/</option>'+opts.map(function(x){return '<option value="'+x[0]+'"'+(w.album===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+albumPill(w)+'</div>'
      +'</div>';}
+  out+='</div>';
   out+='<div class="card sect" id="chatBox"><h2>Chat interna</h2><div id="chatList" style="max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>'
    +'<div class="row" style="gap:8px"><select id="chatWho" style="width:auto"><option>Simone</option><option>Pier</option></select><input id="chatIn" placeholder="Scrivi un messaggio\u2026" style="flex:1;min-width:0"><button class="btn pri" id="chatGo">Invia</button></div></div>';
   return out;
