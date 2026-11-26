@@ -1123,7 +1123,7 @@ function viewW(w){
   // calendario
   out+='<div class="card sect"><h2>Google Calendar</h2><div class="cal"><b>MATRIMONIO</b><div class="hint" style="margin-top:4px">'+esc(dlong(w.data)||'data da inserire')+' · tutto il giorno · rosso pomodoro</div>'
    +'<div style="margin-top:6px;font-size:13px">'+esc(nomiSposi(w))+(w.ora?' · cerimonia ore '+esc(w.ora):'')+'<br>'+esc([w.sposo.tel,w.sposa.tel].filter(Boolean).join(' · '))+'<br>'+esc([w.chiesa.nome&&'Celebrazione '+w.chiesa.nome,w.ristorante.nome&&'Ristorante '+w.ristorante.nome].filter(Boolean).join(' · '))+'</div></div>'
-   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span><button class="btn" id="attBtn">Rimetti in attesa di conferma</button>')+'</div>'
+   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center">'+(w.attesa?'<span class="pill" style="background:#3b9ede;color:#fff;border-color:transparent;font-weight:800;letter-spacing:.06em">IN ATTESA DI CONFERMA</span><button class="btn pri" id="attBtn">Conferma matrimonio</button>':'<span class="pill good">CONFERMATO</span>')+'</div>'
    +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><button class="btn pri" id="calBtn"'+(w.data?'':' disabled')+'>'+'Salva e aggiorna contratto'+'</button><span class="hint" id="calMsg">'+(w.calEventId?'Evento già creato'+(w.calEventLink?' · <a href="'+esc(w.calEventLink)+'" target="_blank" rel="noopener">aprilo</a>':''):(w.data?'Calendario: '+esc(S.set.calendarId||'')+'. Il pulsante crea l\'evento, genera il contratto, lo salva nel Drive, lo invia all\'email degli sposi e lo allega all\'evento.':'Inserisci la data del matrimonio.'))+'</span></div></div>';
   return out;
 }
@@ -1200,7 +1200,7 @@ function bindW(w){
       if(f==='tipo'&&el.value==='sconto'){p.metodo='';p.ricevuto='';p.fatturato=false}
       changed(f==='importo'||f==='tipo')})});
   m.querySelectorAll('[data-delp]').forEach(function(b){b.addEventListener('click',function(){w.pagamenti.splice(+b.dataset.delp,1);changed(true)})});
-  $('#attBtn').addEventListener('click',async function(){
+  var ab=$('#attBtn');if(ab)ab.addEventListener('click',async function(){
     if(w.attesa&&!this.dataset.armed){var bt=this;bt.dataset.armed='1';bt.textContent='Sicuro? Clicca di nuovo per confermare';setTimeout(function(){if(document.body.contains(bt)){delete bt.dataset.armed;bt.textContent='Conferma matrimonio'}},4000);return}
     w.attesa=!w.attesa;if(!w.attesa)delete w.attesa;persist(w);
     if(w.calEventId&&w.data){try{await calSync(w)}catch(e){toast('Calendario non aggiornato: '+calErr(e))}}
