@@ -146,7 +146,7 @@ textarea{resize:vertical;min-height:64px}
 .att i{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none;background:var(--info)}
 .att.warn i{background:var(--warn)}.att.bad i{background:var(--bad)}
 .att:hover span{color:var(--accent)}
-.lw{display:block;padding:14px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:inherit;background:var(--card,transparent)}
+.lw{display:block;text-decoration:none;color:inherit;margin:0}
 .lwg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:12px}
 .lw .sv{font-size:13px;padding:3px 0;display:flex;gap:8px}
 .lw .sv b{min-width:112px}
@@ -715,11 +715,11 @@ function svcRows(w,onlyOpen){
     return '<div class="svr"><span class="nm">'+esc(svcLabel(x.k))+'</span><span>'+who+'</span><span class="pill '+cl+'">'+esc(STATI.filter(function(t){return t[0]===x.stato})[0][1])+'</span>'+(x.nota?'<span class="hint" style="grid-column:1/-1">'+esc(x.nota)+'</span>':'')+'</div>'}).join('');
 }
 function lavCard(w){
-  var st=statoW(w);
-  var sn=!(w.album||w.videoFase),bg=st.k!=='lavoro'?'':sn?'background:rgba(217,48,37,.22);border-color:#d93025':'background:rgba(255,200,0,.2);border-color:#d9a900';
+  var st=statoW(w),sn=!(w.album||w.videoFase);
+  var tag=st.k==='consegnato'?['CONSEGNATO','#2e9d5b','#fff']:st.k==='finito'?['FINITO','#3b9ede','#fff']:sn?['DA INIZIARE','#d93025','#fff']:['IN CORSO','#f2c200','#3d2f00'];
   var sv=attivi(w).filter(function(x){return x.k!=='share'}).map(function(x){return '<div class="sv"><b>'+esc(svcLabel(x.k))+'</b><span>'+esc(x.desc||'')+'</span></div>'}).join('');
-  return '<a class="lw" style="'+bg+'" href="#lavoro-'+esc(w.id)+'"><div style="font-size:16px;font-weight:700">'+esc(nomiSposi(w))+'</div><div class="hint" style="margin-bottom:8px">'+esc(dlong(w.data))+'</div>'
-   +'<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div>'
+  return '<a class="card lw" style="border-color:'+tag[1]+'" href="#lavoro-'+esc(w.id)+'"><div class="row" style="gap:10px;align-items:center;margin-bottom:6px"><span class="pill" style="background:'+tag[1]+';color:'+tag[2]+';border-color:transparent;font-weight:800;letter-spacing:.06em">'+tag[0]+'</span><h2 style="margin:0">'+esc(nomiSposi(w))+'</h2></div><div class="hint" style="margin-bottom:8px">'+esc(dlong(w.data))+'</div>'
+   +'<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'</div>'
    +sv+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
 }
 function viewLav(){
