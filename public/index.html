@@ -321,8 +321,9 @@ function sconti(w){return (w.pagamenti||[]).filter(function(p){return p.tipo==='
 function saldo(w){return totale(w)-acconti(w)-sconti(w)}
 function attivi(w){return (w.servizi||[]).filter(function(s){return s.attivo})}
 function lavori(w){return (w.servizi||[]).filter(function(s){return s.attivo&&(s.k==='foto'||s.k==='video'||s.k==='share')})}
+function lavoriL(w){return lavori(w).filter(function(s){return s.k!=='share'})}
 function statoW(w){
-  var a=lavori(w);var d=daysTo(w.data);
+  var a=lavoriL(w);var d=daysTo(w.data);
   if(!a.length)return {k:'bozza',t:'Bozza',c:''};
   if(w.lavEsc)return (d!==null&&d>=0)?{k:'arrivo',t:d===0?'Oggi':'In arrivo',c:'warn'}:{k:'bozza',t:'—',c:''};
   var cons=a.every(function(s){return s.stato==='consegnato'});
@@ -333,7 +334,7 @@ function statoW(w){
   return {k:'lavoro',t:'In lavorazione',c:'bad'};
 }
 function addMonths(str,n){var d=parseD(str);d.setMonth(d.getMonth()+n);return d.getFullYear()+'-'+two(d.getMonth()+1)+'-'+two(d.getDate())}
-function syncFinito(w){var a=lavori(w);var fin=a.length>0&&a.every(function(s){return s.stato==='finito'||s.stato==='consegnato'});
+function syncFinito(w){var a=lavoriL(w);var fin=a.length>0&&a.every(function(s){return s.stato==='finito'||s.stato==='consegnato'});
   if(fin&&!w.finitoIl)w.finitoIl=todayStr();if(!fin&&w.finitoIl)delete w.finitoIl}
 /* timer: parte il giorno dopo il matrimonio, si ferma quando il lavoro è finito, diventa rosso dopo 3 mesi */
 function timerW(w){
@@ -706,7 +707,7 @@ function bindDash(){
 }
 /* ---------- lavorazione ---------- */
 function svcRows(w,onlyOpen){
-  return lavori(w).filter(function(x){return !onlyOpen||x.stato!=='consegnato'}).map(function(x){
+  return lavoriL(w).filter(function(x){return !onlyOpen||x.stato!=='consegnato'}).map(function(x){
     var cl=x.stato==='consegnato'?'good':x.stato==='finito'?'info':x.stato==='in_corso'?'warn':'';
     var who=(x.team&&x.team.length)?x.team.map(esc).join(', '):'<span class="hint">nessuno assegnato</span>';
     return '<div class="svr"><span class="nm">'+esc(svcLabel(x.k))+'</span><span>'+who+'</span><span class="pill '+cl+'">'+esc(STATI.filter(function(t){return t[0]===x.stato})[0][1])+'</span>'+(x.nota?'<span class="hint" style="grid-column:1/-1">'+esc(x.nota)+'</span>':'')+'</div>'}).join('');
@@ -716,15 +717,15 @@ function lavCard(w){
   return '<a class="lw" href="#lavoro-'+esc(w.id)+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(nomiSposi(w))+'</b><div class="hint">'+esc(dlong(w.data))+'</div></div><div class="row" style="gap:6px;justify-content:flex-end">'+timerPill(w)+prontoPill(w)+videoPill(w)+albumPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>'+svcRows(w,false)+'<div style="text-align:right;margin-top:8px"><button class="btn sm" data-lavx="'+esc(w.id)+'" style="color:#d93025;border-color:#d93025">Togli dalla lavorazione</button></div></a>';
 }
 function viewLav(){
-  var all=conf().filter(function(w){return inYr(w)&&!w.lavEsc&&((w.data&&daysTo(w.data)<0)||w.lavorazione)&&lavori(w).length});
-  var cand=conf().filter(function(w){return inYr(w)&&lavori(w).length&&(w.lavEsc||(!w.lavorazione&&!(w.data&&daysTo(w.data)<0)))}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
+  var all=conf().filter(function(w){return inYr(w)&&!w.lavEsc&&w.lavorazione&&lavoriL(w).length});
+  var cand=conf().filter(function(w){return inYr(w)&&lavoriL(w).length&&!w.lavorazione}).sort(function(a,b){return (a.data||'9999').localeCompare(b.data||'9999')});
   var inl=all.filter(function(w){var k=statoW(w).k;return k==='lavoro'});
   var fin=all.filter(function(w){return statoW(w).k==='finito'});
   var con=all.filter(function(w){return statoW(w).k==='consegnato'});
   inl.sort(function(a,b){return a.data.localeCompare(b.data)});
   // per persona
   var per={};
-  all.forEach(function(w){if(statoW(w).k==='consegnato')return;lavori(w).forEach(function(x){if(x.stato==='finito'||x.stato==='consegnato')return;
+  all.forEach(function(w){if(statoW(w).k==='consegnato')return;lavoriL(w).forEach(function(x){if(x.stato==='finito'||x.stato==='consegnato')return;
     var names=(x.team&&x.team.length)?x.team:['Da assegnare'];
     names.forEach(function(n){(per[n]=per[n]||[]).push({w:w,x:x})})})});
   var names=Object.keys(per).sort(function(a,b){if(a==='Da assegnare')return 1;if(b==='Da assegnare')return -1;return per[b].length-per[a].length});
@@ -745,29 +746,20 @@ function hasAlbum(w){return (w.servizi||[]).some(function(s){return s.attivo&&(s
 function syncFoto(w){var f=(w.servizi||[]).filter(function(s){return s.k==='foto'&&s.attivo})[0];if(!f)return;var a=w.album||'';
   f.stato=!a?'da_fare':(a==='consegnato'?'consegnato':(a==='solo_foto'||a==='arrivato'||a==='ritiro'?'finito':'in_corso'));syncFinito(w)}
 function albumPill(w){var a=ALBUM_ST.filter(function(x){return x[0]===w.album})[0];return a?'<span class="pill" style="background:'+a[2]+';color:'+a[3]+';border-color:transparent">'+esc(a[1])+'</span>':''}
-var VIDEO_ST=[['lavorazione','IN LAVORAZIONE','#ffe3a0','#6b4a00'],['controllo','IN CONTROLLO','#c5e3f7','#17619c'],['no','VIDEO NO','#ffd0d0','#b00020'],['ok','VIDEO OK','#d4edc4','#2d6a1f'],['consegna','VIDEO IN CONSEGNA','#e6d3f5','#6a3a96']];
+var VIDEO_ST=[['lavorazione','IN LAVORAZIONE','#ffe3a0','#6b4a00'],['controllo','IN CONTROLLO','#c5e3f7','#17619c'],['no','VIDEO NO','#ffd0d0','#b00020'],['ok','VIDEO OK','#d4edc4','#2d6a1f'],['consegna','VIDEO IN CONSEGNA','#e6d3f5','#6a3a96'],['consegnato','VIDEO CONSEGNATO','#12794a','#ffffff']];
+function syncVideo(w){var v=(w.servizi||[]).filter(function(x){return x.k==='video'&&x.attivo})[0];if(!v)return;var f=w.videoFase||'';v.stato=!f?'da_fare':f==='consegnato'?'consegnato':(f==='ok'||f==='consegna')?'finito':'in_corso';syncFinito(w)}
 function videoPill(w){var a=VIDEO_ST.filter(function(x){return x[0]===w.videoFase})[0];return a?'<span class="pill" style="background:'+a[2]+';color:'+a[3]+';border-color:transparent">'+esc(a[1])+'</span>':''}
 function prontiW(w){var o=[];if(w.videoFase==='ok')o.push('Video OK');if(w.album==='solo_foto')o.push('Foto pronte');if(w.album==='impaginato')o.push('Album impaginato');return o}
 function prontoBox(w){var p=prontiW(w);return p.length?'<div class="card sect" style="background:#e6f4dc;border-color:#2d6a1f"><b style="color:#2d6a1f">✅ PRONTO · CONTATTARE GLI SPOSI</b><div class="hint" style="margin-top:4px">'+p.map(esc).join(' · ')+'</div></div>':''}
 function prontoPill(w){return prontiW(w).length?'<span class="pill" style="background:#2d6a1f;color:#fff;border-color:transparent">CONTATTARE GLI SPOSI</span>':''}
 /* ---------- scheda lavorazione ---------- */
 function viewLavW(w){
-  var ord=['foto','video','share'];
-  var rows=w.servizi.map(function(s,i){return {s:s,i:i}}).filter(function(r){return r.s.attivo&&(r.s.k==='video'||r.s.k==='share')}).sort(function(a,b){return ord.indexOf(a.s.k)-ord.indexOf(b.s.k)});
-  var st=statoW(w);
+    var st=statoW(w);
   var out='<div class="top"><div><a href="#lavorazione" class="hint">← Lavorazione</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">'+esc(dlong(w.data))+'</p></div><div class="row" style="gap:6px">'+timerPill(w)+'<span class="pill '+st.c+'">'+esc(st.t)+'</span></div></div>';
   out+=prontoBox(w);
-  out+='<div class="card sect"><h2>Stato avanzamento lavoro</h2>';
-  if(!rows.length)out+='<div class="empty">Nessun servizio video o Share Love attivo.</div>';
-  out+=rows.map(function(r){var s=r.s,i=r.i;
-    var who=(s.team&&s.team.length)?s.team.map(esc).join(', '):'nessuno assegnato';
-    return '<div class="lwr"><div><b>'+esc(RUOLO[s.k])+'</b><div class="hint">'+esc(who)+'</div></div>'
-     +'<select data-lv="'+i+'.stato">'+STATI.map(function(x){return '<option value="'+x[0]+'"'+(s.stato===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'
-     +'<input data-lv="'+i+'.nota" value="'+esc(s.nota||'')+'" placeholder="Nota, es. ho iniziato il montaggio">'
-     +((s.k==='foto'||s.k==='video')?'<input class="lk" data-lv="'+i+'.link" value="'+esc(s.link||'')+'" placeholder="Link Mega https://mega.nz/...">':'')
-     +'</div>'}).join('');
-  out+='<p class="hint" style="margin:10px 0 0">Consegnato si può segnare solo con saldo a zero. Chi lavora a cosa si sceglie in <a href="#team">Team</a>.</p></div>';
-  if(rows.some(function(r){return r.s.k==='video'}))out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div></div>';
+  var vidI=-1;w.servizi.forEach(function(x,i){if(x.k==='video'&&x.attivo)vidI=i});
+  if(vidI>=0)out+='<div class="card sect"><h2>Video</h2><div class="row" style="gap:12px;align-items:center"><select data-vf="1" style="max-width:260px"><option value="">/</option>'+VIDEO_ST.map(function(x){return '<option value="'+x[0]+'"'+(w.videoFase===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+videoPill(w)+'</div>'
+   +'<div class="lwr" style="grid-template-columns:1fr"><input data-lv="'+vidI+'.link" value="'+esc(w.servizi[vidI].link||'')+'" placeholder="Link Mega video https://mega.nz/..."></div></div>';
   var fotoI=-1;w.servizi.forEach(function(x,i){if(x.k==='foto'&&x.attivo)fotoI=i});
   if(fotoI>=0){var alb=hasAlbum(w);var opts=alb?ALBUM_ST.filter(function(x){return x[0]!=='solo_foto'}):ALBUM_ST.filter(function(x){return x[0]==='lavorazione'||x[0]==='solo_foto'});
     out+='<div class="card sect"><h2>'+(alb?'Foto e album':'Foto')+'</h2><div class="row" style="gap:12px;align-items:center"><select data-al="1" style="max-width:340px"><option value="">/</option>'+opts.map(function(x){return '<option value="'+x[0]+'"'+(w.album===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+albumPill(w)+'</div>'
@@ -776,7 +768,7 @@ function viewLavW(w){
 }
 function bindLavW(w){
   var m=$('#main');
-  m.querySelectorAll('[data-vf]').forEach(function(el){el.addEventListener('change',function(){w.videoFase=el.value;if(!el.value)delete w.videoFase;if(el.value==='ok'||el.value==='consegna')w.servizi.forEach(function(x){if(x.k==='video'&&x.attivo&&x.stato!=='consegnato')x.stato='finito'});syncFinito(w);persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
+  m.querySelectorAll('[data-vf]').forEach(function(el){el.addEventListener('change',function(){if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=w.videoFase||'';return}w.videoFase=el.value;if(!el.value)delete w.videoFase;syncVideo(w);persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
   m.querySelectorAll('[data-al]').forEach(function(el){el.addEventListener('change',function(){if(el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=w.album||'';return}w.album=el.value;if(!el.value)delete w.album;syncFoto(w);persist(w);var y=window.scrollY;m.innerHTML=viewLavW(w);bindLavW(w);window.scrollTo(0,y)})});
   m.querySelectorAll('[data-lv]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.lv.split('.');var s=w.servizi[+a[0]];
     if(a[1]==='stato'&&el.value==='consegnato'&&saldo(w)>0.005){toast('Consegna bloccata: saldo da incassare '+eur(saldo(w)));el.value=s.stato;return}
