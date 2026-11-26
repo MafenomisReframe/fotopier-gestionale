@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestionale Foto Pier</title>
+<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><meta name="theme-color" content="#111111">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/shim.js"></script>
@@ -1427,5 +1428,5 @@ function start(){
 if(window.claude&&claude.use)start();else{route()}
 })();
 </script>
-</body>
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){})</script></body>
 </html>
