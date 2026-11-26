@@ -464,6 +464,7 @@ function route(){
   else if(h==='listino'){m.innerHTML=viewListino();bindListino()}
   else if(h==='amministrazione'){if(admOk()){m.innerHTML=viewAdm();bindAdm()}else{m.innerHTML=viewAdmLock();bindAdmLock()}}
   else if(h==='impostazioni'){m.innerHTML=viewSet();bindSet()}
+  else if(h==='matrimonio-nuovo'){nuovo()}
   else if(h.indexOf('matrimonio-')===0){var w=byId(h.slice(11));if(w){m.innerHTML=viewW(w);bindW(w)}else m.innerHTML='<h1>Matrimonio non trovato</h1><p class="sub"><a href="#matrimoni">Torna all’elenco</a></p>'}
   else{m.innerHTML=viewDash();bindDash()}
   window.scrollTo(0,0);
@@ -551,7 +552,7 @@ function dayPop(ds){
   var kd=function(e){if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
   m.addEventListener('click',function(e){if(e.target===m)close()});document.getElementById('dayX').addEventListener('click',close);
   m.querySelectorAll('a[href^="#matrimonio"]').forEach(function(a){a.addEventListener('click',close)});
-  m.querySelectorAll('[data-addf]').forEach(function(bt){bt.addEventListener('click',function(){close();if(+bt.dataset.addf===2){S._ctDate=ds;location.hash='matrimonio-nuovo';return}openFcard(+bt.dataset.addf,ds,FK)})});
+  m.querySelectorAll('[data-addf]').forEach(function(bt){bt.addEventListener('click',function(){close();if(+bt.dataset.addf===2){S._ctDate=ds;nuovo();return}openFcard(+bt.dataset.addf,ds,FK)})});
   var apOf=function(k){var q=k.split('|'),w=byId(q[0]);return w?{w:w,a:(w.appuntamenti||[])[+q[1]],i:+q[1]}:null};
   var apTimes=function(a){var o=a.ora,d=a.data;if(o){var hh=+o.slice(0,2),mm=o.slice(3,5);return {startTime:d+'T'+o+':00',endTime:d+'T'+two(Math.min(hh+1,23))+':'+mm+':00',allDay:false}}
     var st=parseD(d),en=new Date(st.getFullYear(),st.getMonth(),st.getDate()+1),iso=function(x){return x.getFullYear()+'-'+two(x.getMonth()+1)+'-'+two(x.getDate())};
