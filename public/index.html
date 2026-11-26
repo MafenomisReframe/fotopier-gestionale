@@ -343,14 +343,19 @@ function timerW(w){
   if(!w.data||!lavori(w).length)return null;
   var dt=daysTo(w.data);if(dt===null||dt>=0)return null;
   var stopped=!!w.finitoIl;
+  if(!stopped&&statoW(w).k==='consegnato')return null;
   var end=stopped?w.finitoIl:todayStr();
   var days=Math.round((parseD(end)-parseD(w.data))/86400000);
   var limit=addMonths(w.data,3);
   var red=parseD(end)>parseD(limit);
   return {days:days,stopped:stopped,red:red,limit:limit};
 }
+function durTxt(a,b){var x=parseD(a),y=parseD(b),m=(y.getFullYear()-x.getFullYear())*12+y.getMonth()-x.getMonth();if(y.getDate()<x.getDate())m--;
+  var base=new Date(x.getFullYear(),x.getMonth()+m,x.getDate()),d=Math.round((y-base)/86400000);
+  var p=[];if(m>0)p.push(m+(m===1?' mese':' mesi'));if(d>0||!p.length)p.push(d+(d===1?' giorno':' giorni'));return p.join(' e ')}
 function timerPill(w){var t=timerW(w);if(!t)return '';
-  var txt=t.stopped?'Finito in '+t.days+' gg':(t.red?'Oltre 3 mesi · '+t.days+' gg':'Giorno '+t.days+' di lavoro');
+  var dur=durTxt(w.data,t.stopped?w.finitoIl:todayStr());
+  var txt=t.stopped?'Finito in '+dur:(t.red?'Oltre 3 mesi · '+dur:dur+' di lavoro');
   return '<span class="pill '+(t.red?'bad':(t.stopped?'good':'info'))+'" title="Scadenza 3 mesi: '+esc(dshort(t.limit))+'">'+esc(txt)+'</span>'}
 function attenzioni(w){
   var out=[],n=nomiSposi(w),st=statoW(w);
