@@ -1071,9 +1071,9 @@ function viewW(w){
      +'<div class="nm">'+esc(svcLabel(s.k))+'</div>'
      +'<div class="svsel"><select data-sv="'+i+'" aria-label="Pacchetto: '+esc(svcLabel(s.k))+'"><option value="none"'+(sel==='none'?' selected':'')+'>— Nessuno —</option>'
      +items.map(function(x,k){return '<option value="'+k+'"'+(sel===String(k)?' selected':'')+'>'+esc(x.nome)+(x.prezzo?' · '+esc(eur(num(x.prezzo))):'')+'</option>'}).join('')
-     +'<option value="altro"'+(altro?' selected':'')+'>Altro (scrivi tu)</option></select>'
-     +(altro?'<input data-sp="'+i+'.desc" value="'+esc(s.desc)+'" placeholder="Descrizione" style="margin-top:6px">':'')+'</div>'
-     +'<input data-sp="'+i+'.prezzo" inputmode="decimal" value="'+(s.prezzo?esc(String(s.prezzo).replace('.',',')):'')+'" placeholder="Prezzo €" '+(altro?'':'disabled')+'>'
+     +(altro?'<option value="" selected disabled>Scegli dal listino…</option>':'')+'</select>'
+     +(altro&&s.desc?'<div class="hint" style="margin-top:4px">Ora: '+esc(s.desc)+'</div>':'')+'</div>'
+     +'<input value="'+(s.prezzo?esc(String(s.prezzo).replace('.',',')):'')+'" placeholder="Prezzo €" disabled>'
      +'</div>';
   }).join('');
   out+='<p class="hint" style="margin:10px 0 0">Chi lavora al matrimonio, lo stato e i link si gestiscono nella sezione <a href="#team">Team</a>.</p></div>';
@@ -1141,11 +1141,11 @@ function bindW(w){
   m.querySelectorAll('[data-sv]').forEach(function(el){
     el.addEventListener('change',function(){
       var s=w.servizi[+el.dataset.sv],v=el.value,items=svcItems(s);
+      if(v==='')return;
       if(v==='none'){svcReset(s)}
       else{
         var was=s.attivo;s.attivo=true;
-        if(v==='altro'){delete s.pk;if(!was){s.desc='';s.prezzo=0}}
-        else{var x=items[+v];s.pk=x.nome;s.desc=x.desc||x.nome;s.prezzo=num(x.prezzo)}
+        {var x=items[+v];s.pk=x.nome;s.desc=x.desc||x.nome;s.prezzo=num(x.prezzo)}
         if(s.k==='foto'||s.k==='fotolibro'){var o=s.k==='foto'?'fotolibro':'foto';w.servizi.forEach(function(y){if(y.k===o&&y.attivo){svcReset(y);toast(svcLabel(s.k)+' e '+svcLabel(o)+' non si possono scegliere insieme: tolto '+svcLabel(o))}})}
       }
       changed(true)})});
