@@ -943,8 +943,8 @@ function bindAdmLock(){var go=$('#admGo');if(!go)return;
   go.addEventListener('click',run);$('#admP1').addEventListener('keydown',function(e){if(e.key==='Enter')run()});if($('#admP2'))$('#admP2').addEventListener('keydown',function(e){if(e.key==='Enter')run()});$('#admP1').focus()}
 function admChange(){var p=prompt('Nuova password per Amministrazione (almeno 4 caratteri):');if(!p)return;if(p.length<4){toast('Almeno 4 caratteri');return}sha(p).then(function(h){S.set.admHash=h;persistSet();toast('Password cambiata')})}
 /* ---------- amministrazione ---------- */
-var CATS=[['foto','Foto'],['album','Album genitori'],['video','Video'],['share','Share Love'],['extra','Extra']];
-function catOf(k){return k==='video'?'video':k==='share'?'share':k==='album'?'album':(k==='foto'||k==='fotolibro')?'foto':'extra'}
+var CATS=[['foto','Servizio fotografico'],['fotolibro','Fotolibro'],['album','Album genitori'],['video','Video'],['share','Share Love'],['extra','Extra']];
+function catOf(k){return k==='video'?'video':k==='share'?'share':k==='album'?'album':k==='foto'?'foto':k==='fotolibro'?'fotolibro':'extra'}
 function admData(list){
   var c={};CATS.forEach(function(x){c[x[0]]={tot:0,inc:0,sco:0}});
   var T={tot:0,inc:0,sco:0};
