@@ -96,7 +96,7 @@ tr.click:hover td{background:var(--pale)}
 input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13.5px;width:100%;text-transform:none;letter-spacing:0;font-weight:500;min-width:0}
 textarea{resize:vertical;min-height:64px}
 .sect{margin-bottom:14px}
-.svc{display:grid;grid-template-columns:24px minmax(110px,1.1fr) minmax(160px,2fr) 110px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.svc{display:grid;grid-template-columns:minmax(110px,1fr) minmax(200px,2.4fr) 110px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .svc.off{opacity:.55}
 .nl{position:relative}.nl summary{list-style:none;cursor:pointer}.nl summary::-webkit-details-marker{display:none}
 .nl[open]::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40}
@@ -157,8 +157,8 @@ textarea{resize:vertical;min-height:64px}
   .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px 14px;border-right:0;border-bottom:1px solid var(--line)}
   .brand{padding:0 8px 0 0}.brand small,.side .foot{display:none}
   .nav{display:flex;gap:4px;flex-wrap:wrap}.nav a{padding:8px 10px}
-  .svc{grid-template-columns:24px 1fr 1fr;}
-  .svc>*:nth-child(n+4){grid-column:span 3}
+  .svc{grid-template-columns:1fr 1fr}
+  .svc>*:nth-child(n+2){grid-column:span 2}
   .f label,.f label.s2,.f label.s3,.f label.s6,.f label.s8{grid-column:span 6}
   .f label.s12{grid-column:span 12}
 }
@@ -1045,25 +1045,18 @@ function viewW(w){
    +inp('chiesa.nome','Celebrazione','s6','text',w.chiesa.nome)+inp('chiesa.citta','Città','s4','text',w.chiesa.citta)+inp('chiesa.prov','Prov','s2','text',w.chiesa.prov)
    +inp('ristorante.nome','Ristorante','s6','text',w.ristorante.nome)+inp('ristorante.citta','Città','s4','text',w.ristorante.citta)+inp('ristorante.prov','Prov','s2','text',w.ristorante.prov)
    +'</div></div>';
-  // appuntamenti
-  out+='<div class="card sect"><h2>Appuntamenti</h2>';
-  var aps=w.appuntamenti||[];
-  out+=aps.length?'<div class="scroll"><table><thead><tr><th>Appuntamento</th><th>Data</th><th>Ora</th><th>Note</th><th>Fatto</th><th></th></tr></thead><tbody>'+aps.map(function(a,i){
-    return '<tr><td><select data-ap="'+i+'.tipo">'+TIPI_APP.concat(a.tipo&&TIPI_APP.indexOf(a.tipo)<0?[a.tipo]:[]).map(function(t){return '<option'+(a.tipo===t?' selected':'')+'>'+esc(t)+'</option>'}).join('')+'</select></td>'
-     +'<td><input type="date" data-ap="'+i+'.data" value="'+esc(a.data||'')+'"></td><td><input type="time" data-ap="'+i+'.ora" value="'+esc(a.ora||'')+'" style="min-width:100px"></td>'
-     +'<td><input data-ap="'+i+'.note" value="'+esc(a.note||'')+'" placeholder="Dove, con chi, cosa portare" style="min-width:160px"></td>'
-     +'<td><input type="checkbox" style="width:auto" data-ap="'+i+'.fatto" '+(a.fatto?'checked':'')+' aria-label="Fatto"></td>'
-     +'<td><button class="btn sm del" data-delap="'+i+'" aria-label="Elimina appuntamento">×</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty" style="padding-top:0">Nessun appuntamento fissato.</div>';
-  out+='<div class="row" style="margin-top:10px"><button class="btn" id="addAp">Aggiungi appuntamento</button></div></div>';
   // servizi
   out+=CATS.map(function(c){return '<datalist id="dl-'+c[0]+'">'+S.listino.filter(function(x){return x.cat===c[0]&&x.nome}).map(function(x){return '<option value="'+esc(x.nome)+'">'}).join('')+'</datalist>'}).join('');
   out+='<div class="card sect"><h2>Servizi</h2>';
   out+=w.servizi.map(function(s,i){
+    var items=svcItems(s),sel=svcSel(s,items),altro=s.attivo&&sel==='altro';
     return '<div class="svc'+(s.attivo?'':' off')+'" data-i="'+i+'">'
-     +'<input type="checkbox" data-sp="'+i+'.attivo" '+(s.attivo?'checked':'')+' aria-label="Incluso: '+esc(svcLabel(s.k))+'">'
      +'<div class="nm">'+esc(svcLabel(s.k))+'</div>'
-     +'<input data-sp="'+i+'.desc" list="dl-'+catOf(s.k)+'" value="'+esc(s.desc)+'" placeholder="Dal listino o scrivi tu" '+(s.attivo?'':'disabled')+'>'
-     +'<input data-sp="'+i+'.prezzo" inputmode="decimal" value="'+(s.prezzo?esc(String(s.prezzo).replace('.',',')):'')+'" placeholder="Prezzo €" '+(s.attivo?'':'disabled')+'>'
+     +'<div class="svsel"><select data-sv="'+i+'" aria-label="Pacchetto: '+esc(svcLabel(s.k))+'"><option value="none"'+(sel==='none'?' selected':'')+'>— Nessuno —</option>'
+     +items.map(function(x,k){return '<option value="'+k+'"'+(sel===String(k)?' selected':'')+'>'+esc(x.nome)+(x.prezzo?' · '+esc(eur(num(x.prezzo))):'')+'</option>'}).join('')
+     +'<option value="altro"'+(altro?' selected':'')+'>Altro (scrivi tu)</option></select>'
+     +(altro?'<input data-sp="'+i+'.desc" value="'+esc(s.desc)+'" placeholder="Descrizione" style="margin-top:6px">':'')+'</div>'
+     +'<input data-sp="'+i+'.prezzo" inputmode="decimal" value="'+(s.prezzo?esc(String(s.prezzo).replace('.',',')):'')+'" placeholder="Prezzo €" '+(altro?'':'disabled')+'>'
      +'</div>';
   }).join('');
   out+='<p class="hint" style="margin:10px 0 0">Chi lavora al matrimonio, lo stato e i link si gestiscono nella sezione <a href="#team">Team</a>.</p></div>';
@@ -1094,6 +1087,13 @@ function viewW(w){
   if(w!==S.bozza)out+='<div class="row" style="margin:14px 0 30px"><button class="btn pri savew" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Salva modifiche</button></div>';
   return out;
 }
+function svcItems(s){return S.listino.filter(function(x){return x.cat===catOf(s.k)&&x.nome})}
+function svcSel(s,items){
+  if(!s.attivo)return 'none';
+  var k=-1;items.forEach(function(x,j){if(k<0&&s.pk&&x.nome===s.pk)k=j});
+  if(k<0)items.forEach(function(x,j){if(k<0&&(x.desc||x.nome)===s.desc&&(!x.prezzo||num(x.prezzo)===num(s.prezzo)))k=j});
+  return k<0?'altro':String(k)}
+function svcReset(s){var df=SERVIZI.filter(function(x){return x.k===s.k})[0];s.attivo=false;s.desc=df?df.desc:'';s.prezzo=0;s.team=[];s.stato='da_fare';s.link='';delete s.pk}
 function svcPop(w,i,done){
   var s=w.servizi[i];var old=document.getElementById('svcPop');if(old)old.remove();
   var items=S.listino.filter(function(x){return x.cat===catOf(s.k)&&x.nome});
@@ -1121,6 +1121,17 @@ function bindW(w){
     el.addEventListener('input',function(){setp(w,el.dataset.p,el.value);S._shown=JSON.stringify(w);persist(w);if(el.dataset.p==='sposo.nome'||el.dataset.p==='sposa.nome'){var h=$('h1');if(h)h.textContent=nomiSposi(w)}});
     el.addEventListener('change',function(){if(el.dataset.p==='data'||el.dataset.p==='condivisione')changed(true)});
   });
+  m.querySelectorAll('[data-sv]').forEach(function(el){
+    el.addEventListener('change',function(){
+      var s=w.servizi[+el.dataset.sv],v=el.value,items=svcItems(s);
+      if(v==='none'){svcReset(s)}
+      else{
+        var was=s.attivo;s.attivo=true;
+        if(v==='altro'){delete s.pk;if(!was){s.desc='';s.prezzo=0}}
+        else{var x=items[+v];s.pk=x.nome;s.desc=x.desc||x.nome;s.prezzo=num(x.prezzo)}
+        if(s.k==='foto'||s.k==='fotolibro'){var o=s.k==='foto'?'fotolibro':'foto';w.servizi.forEach(function(y){if(y.k===o&&y.attivo){svcReset(y);toast(svcLabel(s.k)+' e '+svcLabel(o)+' non si possono scegliere insieme: tolto '+svcLabel(o))}})}
+      }
+      changed(true)})});
   m.querySelectorAll('[data-sp]').forEach(function(el){
     el.addEventListener('change',function(){
       var a=el.dataset.sp.split('.');var s=w.servizi[+a[0]];var f=a[1];
@@ -1149,9 +1160,6 @@ function bindW(w){
       if(f==='tipo'&&el.value==='sconto'){p.metodo='';p.ricevuto='';p.fatturato=false}
       changed(f==='importo'||f==='tipo')})});
   m.querySelectorAll('[data-delp]').forEach(function(b){b.addEventListener('click',function(){w.pagamenti.splice(+b.dataset.delp,1);changed(true)})});
-  m.querySelectorAll('[data-ap]').forEach(function(el){el.addEventListener('change',function(){var a=el.dataset.ap.split('.');var p=w.appuntamenti[+a[0]];p[a[1]]=el.type==='checkbox'?el.checked:el.value;changed(a[1]==='fatto'||a[1]==='data')})});
-  m.querySelectorAll('[data-delap]').forEach(function(b){b.addEventListener('click',function(){var rm=w.appuntamenti.splice(+b.dataset.delap,1)[0];if(rm&&rm.calEventId)calDelIds([rm.calEventId]);changed(true)})});
-  $('#addAp').addEventListener('click',function(){w.appuntamenti=w.appuntamenti||[];w.appuntamenti.push({tipo:TIPI_APP[0],data:'',ora:'',note:'',fatto:false});changed(true)});
   $('#attBtn').addEventListener('click',async function(){
     if(w.attesa&&!this.dataset.armed){var bt=this;bt.dataset.armed='1';bt.textContent='Sicuro? Clicca di nuovo per confermare';setTimeout(function(){if(document.body.contains(bt)){delete bt.dataset.armed;bt.textContent='Conferma matrimonio'}},4000);return}
     w.attesa=!w.attesa;if(!w.attesa)delete w.attesa;persist(w);
