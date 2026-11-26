@@ -1286,10 +1286,12 @@ function viewSet(){
    +'<div class="card sect"><h2>Pagamenti</h2><div class="f">'+setf('iban','IBAN','s8')+setf('intestatario','Intestatario','s4')+setf('mailBonifico','Mail per la copia del bonifico','s6')+'</div></div>'
    +'<div class="card sect"><h2>Team</h2><div class="team" id="teamList">'+s.team.map(function(t,i){return '<span class="chip on">'+esc(t)+' <button data-rm="'+i+'" style="background:none;border:0;cursor:pointer;color:inherit" aria-label="Rimuovi '+esc(t)+'">×</button></span>'}).join('')+'</div>'
    +'<div class="row" style="margin-top:12px"><input id="newMember" placeholder="Nuovo fotografo o videomaker" style="max-width:260px"><button class="btn" id="addMember">Aggiungi</button></div></div>'
+   +'<div class="card"><h2>Collegamenti</h2><p class="hint" style="margin:0 0 10px">Controlla se Google Drive, email e calendario sono collegati.</p><button class="btn" id="stChk">Controlla collegamenti</button><div id="stOut" class="hint" style="margin-top:10px"></div></div>'
    +'<div class="card"><h2>Archivio</h2><p class="hint" style="margin:0 0 10px">Esporta tutti i matrimoni in un file CSV.</p><button class="btn" id="csv">Scarica elenco CSV</button></div>';
 }
 function setf(k,l,c){return '<label class="'+c+'">'+esc(l)+'<input data-set="'+k+'" value="'+esc(S.set[k])+'"></label>'}
 function bindSet(){
+  var stb=$('#stChk');if(stb)stb.addEventListener('click',function(){var o=$('#stOut');o.textContent='Controllo…';fetch('/api/status',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){o.innerHTML='Google Drive: <b>'+(j.drive&&j.driveScope?'collegato':'NON collegato')+'</b><br>Invio email (Gmail): <b>'+(j.gmail?'collegato':'NON collegato: manca il permesso')+'</b><br>Google Calendar: <b>'+(j.calendario?'collegato':'NON collegato')+'</b>'+(j.errore?'<br>'+esc(j.errore):'')}).catch(function(){o.textContent='Controllo non riuscito'})});
   var bbn=$('#bioBtn');if(bbn)bbn.addEventListener('click',function(){if(bioId()){if(confirm('Disattivare l\u2019impronta su questo dispositivo?')){try{localStorage.removeItem('bioId')}catch(e){}route2()}}else bioEnable()});var ca=$('#chgApp');if(ca)ca.addEventListener('click',appChange);
   var ib=$('#imp26');if(ib)ib.addEventListener('click',async function(){
     if(!confirm('Importare i matrimoni 2026 nel gestionale?'))return;

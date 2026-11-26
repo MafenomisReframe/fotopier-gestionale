@@ -198,6 +198,19 @@ async function driveUpload(env, b) {
   return json({ ok: true, id: j.id, link: j.webViewLink, cartella: fname });
 }
 
+async function status(env) {
+  const o = { calendario: !!env.GOOGLE_SA_JSON };
+  try {
+    const tok = await driveToken(env);
+    o.drive = true;
+    const t = await (await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + tok)).json();
+    const sc = String(t.scope || '');
+    o.scope = sc;
+    o.driveScope = /auth\/drive/.test(sc);
+    o.gmail = /gmail\.(send|compose|modify)|mail\.google\.com/.test(sc);
+  } catch (e) { o.drive = false; o.errore = String(e.message || e); }
+  return json(o);
+}
 async function sendMail(env, b) {
   const to = String(b.to || '').trim();
   if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) return json({ error: 'Email non valida' }, 400);
@@ -246,6 +259,7 @@ export default {
       }
       if (!authed) return json({ error: 'Accesso non autorizzato' }, 401);
 
+      if (url.pathname === '/api/status') return await status(env);
       if (url.pathname === '/api/all' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT path, data FROM docs').all();
         const docs = {};
