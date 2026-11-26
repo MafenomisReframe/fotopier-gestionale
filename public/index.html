@@ -1068,7 +1068,7 @@ function viewW(w){
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
    +(w===S.bozza?'<div class="row"><button class="btn pri" id="linkBozza" style="background:#d93025;border-color:#d93025;color:#fff">Collega a un evento già creato</button><button class="btn pri" id="okBozza" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Conferma e salva contratto</button><button class="btn" id="noBozza">Annulla</button></div></div><div class="card" style="border-color:#e0b100;margin-bottom:14px"><b>Bozza non ancora salvata.</b> <span class="hint">Il contratto viene creato solo quando premi "Conferma e salva contratto". Se esci, non viene salvato nulla.</span></div>'
-   :'<div class="row"><button class="btn pri savew" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Salva modifiche</button><button class="btn pri" id="pdf">Scarica contratto PDF</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
+   :'<div class="row"><button class="btn pri savew" style="background:#2e9d5b;border-color:#2e9d5b;color:#fff">Salva modifiche</button><button class="btn pri" id="pdf">Anteprima</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
@@ -1204,13 +1204,15 @@ function bindW(w){
     function say(t){msg.textContent=t}
     if(!w.data){return}
     btn.disabled=true;say('Creo l\u2019evento…');
+    var cw=null;try{cw=window.open('','_blank')}catch(e){}
     try{
       var upd=await calSync(w);
       persist(w);toast(upd?'Evento aggiornato':'Evento creato in Google Calendar');
       say('Genero il contratto: Drive, email agli sposi, allegato all\u2019evento…');
-      await makePdf(w,false,true);
+      await makePdf(w,false,true,'auto',cw);
       m.innerHTML=viewW(w);bindW(w);
     }catch(e){
+      try{if(cw)cw.close()}catch(x){}
       btn.disabled=false;var c=e&&e.code;
       if(c==='approval_required'||c==='consent_required'||c==='not_in_manifest')say('Serve il tuo permesso: conferma la richiesta di Google Calendar quando compare.');
       else if(c==='needs_reauth'||c==='server_not_connected')say('Google Calendar non è collegato: ricollegalo in claude.ai, Impostazioni, Connettori.');
@@ -1228,7 +1230,7 @@ function bindW(w){
     $('#linkBozza').addEventListener('click',function(){linkPop(w)});
     return;
   }
-  $('#pdf').addEventListener('click',function(){makePdf(w)});
+  $('#pdf').addEventListener('click',function(){var pw=null;try{pw=window.open('','_blank')}catch(e){}makePdf(w,false,false,'preview',pw)});
   $('#mailPdf').addEventListener('click',function(){
     var b=this,em=mailOf(w);
     if(!em){toast('Scrivi prima l\'email degli sposi e salva');return}
@@ -1347,9 +1349,9 @@ function previewPdf(bytes,nome,mail,silent){
     document.getElementById('pvOk').addEventListener('click',function(){end(true)});
     document.getElementById('pvNo').addEventListener('click',function(){end(false)});
   })}
-async function makePdf(w,mail,silent){
+async function makePdf(w,mail,silent,mode,winArg){
   if(!window.PDFLib){toast('Libreria PDF non caricata, riprova tra un attimo');return}
-  var win=null;if(!mail&&!silent){try{win=window.open('','_blank')}catch(e){}}
+  var win=winArg||null;
   try{
     var P=PDFLib,doc=await P.PDFDocument.create();
     var R=await doc.embedFont(P.StandardFonts.Helvetica),B=await doc.embedFont(P.StandardFonts.HelveticaBold);
@@ -1420,7 +1422,8 @@ async function makePdf(w,mail,silent){
     T(M,y-8,'Luogo e data  Travagliato, '+dlong(w.contrattoData||todayStr()),{b:1,z:8.5});hl(M,M+CW/2-20,y-1);hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
-    if(!(await previewPdf(bytes,nome,mail,silent))){try{if(win)win.close()}catch(x){}toast('Annullato: non è stato salvato né inviato nulla');return}
+    if(mode==='preview'){if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}else toast('Consenti le finestre popup per vedere l\u2019anteprima');return}
+    if(mail&&!(await previewPdf(bytes,nome,mail,silent))){try{if(win)win.close()}catch(x){}toast('Annullato: non è stato salvato né inviato nulla');return}
     if(mail){await mailContract(w,nome,bytes);return}
     if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}
     w.contrattoGenerato=todayStr();persist(w);
