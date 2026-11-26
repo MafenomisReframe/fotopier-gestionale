@@ -1080,7 +1080,7 @@ function viewW(w){
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
   out+='<div class="card sect"><h2>Contatti</h2><div class="f">'
-   +inp('email','Social e mail','s9','text',w.email)
+   +inp('email','Social e mail','s6','text',w.email)+'<label class="s3">Numero indicativo invitati<input data-p="invitati" type="text" inputmode="numeric" placeholder="es. 120+" value="'+esc(w.invitati==null?'':w.invitati)+'"></label>'
    +'<label class="s3">Consenso condivisione<select data-p="condivisione"><option value=""'+(w.condivisione===''?' selected':'')+'>Da raccogliere</option><option value="si"'+(w.condivisione==='si'?' selected':'')+'>Sì</option><option value="no"'+(w.condivisione==='no'?' selected':'')+'>No</option></select></label></div></div>';
   out+='<div class="card sect"><h2>Cerimonia e ricevimento</h2><div class="f">'
    +inp('chiesa.nome','Celebrazione','s6','text',w.chiesa.nome)+inp('chiesa.citta','Città','s4','text',w.chiesa.citta)+inp('chiesa.prov','Prov','s2','text',w.chiesa.prov)
