@@ -1307,6 +1307,21 @@ async function mailContract(w,nome,bytes){
   }catch(e){toast('Invio non riuscito')}
 }
 function mailOf(w){var m=String(w.email||'').match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/);return m?m[0]:''}
+function previewPdf(bytes,nome,mail,silent){
+  return new Promise(function(res){
+    var url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+    var o=document.createElement('div');o.id='pdfPrev';
+    o.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.82);display:flex;flex-direction:column;padding:10px;gap:8px';
+    var what=mail?'Verrà inviata la copia all\u2019email degli sposi.':silent?'Verrà salvato nel Drive, inviato agli sposi e allegato all\u2019evento.':'Verrà scaricato, salvato nel Drive e inviato agli sposi, poi si apre per la stampa.';
+    o.innerHTML='<div style="color:#fff;font-weight:700">Anteprima contratto: controlla tutto prima di procedere</div>'
+      +'<iframe src="'+url+'" style="flex:1;width:100%;border:0;background:#fff;border-radius:8px"></iframe>'
+      +'<div style="color:#ddd;font-size:13px">'+what+' <a href="'+url+'" target="_blank" rel="noopener" style="color:#9cf">Apri in una scheda</a></div>'
+      +'<div style="display:flex;gap:8px"><button class="btn" id="pvNo" style="flex:1">Torna a modificare</button><button class="btn pri" id="pvOk" style="flex:1">Ho controllato, procedi</button></div>';
+    document.body.appendChild(o);
+    function end(v){o.remove();setTimeout(function(){URL.revokeObjectURL(url)},60000);res(v)}
+    document.getElementById('pvOk').addEventListener('click',function(){end(true)});
+    document.getElementById('pvNo').addEventListener('click',function(){end(false)});
+  })}
 async function makePdf(w,mail,silent){
   if(!window.PDFLib){toast('Libreria PDF non caricata, riprova tra un attimo');return}
   var win=null;if(!mail&&!silent){try{win=window.open('','_blank')}catch(e){}}
@@ -1380,6 +1395,7 @@ async function makePdf(w,mail,silent){
     T(M,y-8,'Luogo e data  Travagliato, '+dlong(w.contrattoData||todayStr()),{b:1,z:8.5});hl(M,M+CW/2-20,y-1);hl(x2,W-M,y);T(x2,y+4,'Firma titolare',{z:7.5,c:mut});
     var bytes=await doc.save();
     var nome='Contratto_'+(w.sposo.nome||'sposo').replace(/[^A-Za-z0-9]+/g,'_')+'_'+(w.sposa.nome||'sposa').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
+    if(!(await previewPdf(bytes,nome,mail,silent))){try{if(win)win.close()}catch(x){}toast('Annullato: non è stato salvato né inviato nulla');return}
     if(mail){await mailContract(w,nome,bytes);return}
     if(!silent)await save(nome,bytes);
     if(win){try{win.location.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))}catch(e){}}
