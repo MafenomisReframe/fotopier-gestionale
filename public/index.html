@@ -1075,7 +1075,7 @@ function viewW(w){
   var st=statoW(w);
   var out='<div class="top"><div><a href="#matrimoni" class="hint" style="text-decoration:none">← Tutti i matrimoni</a><h1>'+esc(nomiSposi(w))+'</h1><p class="sub">Pratica '+esc(lab(w))+' · <span class="pill '+st.c+'">'+esc(st.t)+'</span> '+timerPill(w)+'</p></div>'
    +(w===S.bozza?'</div>'
-   :'<div class="row"><button class="btn pri" id="pdf">Anteprima</button><button class="btn" id="mailPdf">Invia copia all\'email</button><button class="btn del" id="delW">Elimina</button></div></div>');
+   :'<div class="row"><button class="btn pri" id="pdf">Anteprima</button><button class="btn del" id="delW">Elimina</button></div></div>');
   out+='<div class="card sect"><h2>Matrimonio</h2><div class="f">'
    +inp('data','Data del matrimonio','s3','date',w.data)+oraSel(w.ora)+inp('contrattoData','Data contratto','s3','date',w.contrattoData)+'</div></div>';
   out+=person(w,'sposo','Sposo')+person(w,'sposa','Sposa');
@@ -1216,7 +1216,7 @@ function bindW(w){
       var upd=await calSync(w);
       persist(w);toast(upd?'Evento aggiornato':'Evento creato in Google Calendar');
       say('Genero il contratto: Drive, email agli sposi, allegato all\u2019evento…');
-      await makePdf(w,false,true,'auto',cw);
+      if(w.contrattoGenerato&&caparreNuove(w).length){try{if(cw)cw.close()}catch(x){}await makePdf(w,false,true,'drive')}else await makePdf(w,false,true,'auto',cw);
       m.innerHTML=viewW(w);bindW(w);
     }catch(e){
       try{if(cw)cw.close()}catch(x){}
@@ -1233,11 +1233,6 @@ function bindW(w){
     return;
   }
   $('#pdf').addEventListener('click',function(){var pw=null;try{pw=window.open('','_blank')}catch(e){}makePdf(w,false,false,'preview',pw)});
-  $('#mailPdf').addEventListener('click',function(){
-    var b=this,em=mailOf(w);
-    if(!em){toast('Scrivi prima l\'email degli sposi e salva');return}
-    if(!b.dataset.armed){b.dataset.armed='1';b.textContent='Invia a '+em+'? Clicca ancora';setTimeout(function(){if(document.body.contains(b)){delete b.dataset.armed;b.textContent='Invia copia all\'email'}},5000);return}
-    delete b.dataset.armed;b.textContent='Invia copia all\'email';makePdf(w,true)});
   $('#delW').addEventListener('click',function(){
     var b=$('#delW');if(!b.dataset.sure){b.dataset.sure='1';b.textContent='Conferma eliminazione';setTimeout(function(){if(b){b.textContent='Elimina';delete b.dataset.sure}},4000);return}
     calDelIds([w.calEventId].concat((w.appuntamenti||[]).map(function(x){return x.calEventId})));
@@ -1464,7 +1459,7 @@ async function makePdf(w,mail,silent,mode,winArg,extra){
       if(dr.ok){if(dj.link){w.contrattoLink=dj.link;persist(w)}toast('Contratto salvato nel Drive in '+dj.cartella)}
       else if(dr.status!==500||!/non configurato/.test(dj.error||'')){toast('Salvataggio su Drive non riuscito: '+(dj.error||dr.status))}
     }catch(e){}
-    if(mailOf(w)&&!(w.contrattoInviato||'').endsWith(' a '+mailOf(w)))await mailContract(w,nome,bytes);
+    if(mailOf(w))await mailContract(w,nome,bytes);
     if(w.calEventId&&w.data){try{await calSync(w);persist(w);toast('Contratto generato e evento in calendario aggiornato')}catch(e){}}
   }catch(e){try{if(win)win.close()}catch(x){}toast('Creazione PDF non riuscita')}
 }
