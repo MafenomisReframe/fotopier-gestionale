@@ -891,8 +891,23 @@ function bioOffer(){
   document.getElementById('bioNo').addEventListener('click',function(){try{localStorage.setItem('bioNo','1')}catch(e){}b.remove()})}
 /* ---------- password di accesso ---------- */
 function appOk(){try{return sessionStorage.getItem('appOk')==='1'}catch(e){return false}}
+function srvLock(L){var nuova=!!S.srv.setup;
+  L.innerHTML='<div style="max-width:340px;width:100%;padding:24px"><div style="font-weight:800;letter-spacing:.08em;font-size:20px;margin-bottom:4px">FOTO PIER</div><div style="color:var(--muted);margin-bottom:16px">'+(nuova?'Scegli la password di accesso':'Inserisci la password')+'</div>'
+   +'<input type="password" id="lkP1" placeholder="'+(nuova?'Nuova password':'Password')+'" autocomplete="current-password" style="width:100%;box-sizing:border-box">'
+   +(nuova?'<input type="password" id="lkP2" placeholder="Ripeti password" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:8px">':'')
+   +'<button class="btn pri" id="lkGo" style="margin-top:12px;width:100%">'+(nuova?'Salva e entra':'Entra')+'</button></div>';
+  var p1=document.getElementById('lkP1'),p2=document.getElementById('lkP2'),go=document.getElementById('lkGo');
+  function run(){var p=p1.value;if(!p){toast('Scrivi la password');return}
+    if(nuova){if(p.length<4){toast('Almeno 4 caratteri');return}if(p!==p2.value){toast('Le due password non coincidono');return}}
+    go.disabled=true;
+    sha(p).then(function(h){return fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({hash:h,setup:nuova})})})
+    .then(function(r){return r.json().catch(function(){return{}}).then(function(j){return{ok:r.ok,j:j}})})
+    .then(function(x){if(x.ok){try{sessionStorage.setItem('appOk','1');sessionStorage.removeItem('authReload')}catch(e){}location.reload()}else{go.disabled=false;toast(x.j.error||'Password sbagliata');p1.value='';p1.focus()}})
+    .catch(function(){go.disabled=false;toast('Connessione assente')})}
+  go.addEventListener('click',run);[p1,p2].forEach(function(e){if(e)e.addEventListener('keydown',function(k){if(k.key==='Enter')run()})});p1.focus()}
 function lockRender(){var L=document.getElementById('appLock');if(!L)return;
   if(appOk()){L.remove();return}
+  if(S.srv&&S.srv.ok===false){if(!L.dataset.srv){L.dataset.srv='1';srvLock(L)}return}
   var nuova=S.setLoaded&&!S.set.appHash;
   L.innerHTML='<div style="max-width:340px;width:100%;padding:24px"><div style="font-weight:800;letter-spacing:.08em;font-size:20px;margin-bottom:4px">FOTO PIER</div><div style="color:var(--muted);margin-bottom:16px">'+(!S.setLoaded?'Caricamento…':nuova?'Scegli la password di accesso':'Inserisci la password')+'</div>'
    +'<input type="password" id="lkP1" placeholder="'+(nuova?'Nuova password':'Password')+'" autocomplete="off" style="width:100%;box-sizing:border-box">'
@@ -907,7 +922,8 @@ function lockRender(){var L=document.getElementById('appLock');if(!L)return;
     else sha(p).then(function(h){if(h===S.set.appHash)ok();else{toast('Password sbagliata');p1.value=''}})}
   var bb=document.getElementById('lkBio');if(bb){var tryBio=function(){bioLogin().then(function(o){if(o)ok(true)})};bb.addEventListener('click',tryBio);if(!S._bioAuto){S._bioAuto=1;tryBio()}}
   go.addEventListener('click',run);[p1,p2].forEach(function(e){if(e)e.addEventListener('keydown',function(k){if(k.key==='Enter')run()})});if(document.activeElement!==p1)p1.focus()}
-function lockInit(){if(appOk())return;var L=document.createElement('div');L.id='appLock';L.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center';document.body.appendChild(L);lockRender()}
+function lockInit(){if(appOk())return;var L=document.createElement('div');L.id='appLock';L.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center';document.body.appendChild(L);
+  fetch('/api/session',{credentials:'same-origin'}).then(function(r){return r.json()}).catch(function(){return{ok:true}}).then(function(j){S.srv=j;lockRender()})}
 function appChange(){var p=prompt('Nuova password di accesso al gestionale (almeno 4 caratteri):');if(!p)return;if(p.length<4){toast('Almeno 4 caratteri');return}sha(p).then(function(h){S.set.appHash=h;persistSet();toast('Password di accesso cambiata')})}
 /* ---------- password amministrazione ---------- */
 function admOk(){try{return sessionStorage.getItem('admOk')==='1'}catch(e){return false}}

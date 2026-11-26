@@ -17,7 +17,9 @@
       headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined
     }).then(function (r) {
-      if (r.status === 401 || r.status === 403) { var e = new Error('Accesso non autorizzato'); e.code = 'auth'; throw e; }
+      if (r.status === 401 || r.status === 403) {
+        try { if (!sessionStorage.getItem('authReload')) { sessionStorage.setItem('authReload', '1'); sessionStorage.removeItem('appOk'); location.reload(); } } catch (x) {}
+        var e = new Error('Accesso non autorizzato'); e.code = 'auth'; throw e; }
       if (!r.ok) {
         return r.json().catch(function () { return {}; }).then(function (j) { var e2 = new Error(j.error || ('Errore ' + r.status)); e2.code = 'http'; throw e2; });
       }

@@ -14,12 +14,10 @@ App su Cloudflare Workers + D1. Accesso protetto da Cloudflare Access (solo emai
 2. Deploy command: `npx wrangler deploy`.
 3. Il database D1 `fotopier-gestionale` è già collegato da `wrangler.jsonc`.
 
-## 2. Accesso solo a email autorizzate
-1. Cloudflare → Zero Trust → Access → Applications → Add → Self-hosted.
-2. Dominio: quello del Worker (`fotopier-gestionale.<account>.workers.dev`).
-3. Policy Allow → Emails: le email autorizzate (tu, Pier, weddingfotopier@gmail.com).
-4. Copia **Application Audience (AUD) tag** e il **team name** e inseriscili in `wrangler.jsonc`:
-   `ACCESS_AUD`, `ACCESS_TEAM`, `ALLOWED_EMAILS` (lista separata da virgole). Poi nuovo deploy.
+## 2. Accesso con password
+L'app chiede la sua password (sessione di 30 giorni sul dispositivo, poi la richiede di nuovo). Non serve Cloudflare Access:
+se esiste un'applicazione Access per questo Worker, va eliminata (Zero Trust → Access → Applications) per non avere il doppio login.
+Al primo avvio l'app chiede di scegliere la password. Facoltativo: `SESSION_SECRET` (secret) per la firma delle sessioni.
 
 ## 3. Google Calendar (facoltativo)
 1. Google Cloud → nuovo progetto → abilita Google Calendar API.

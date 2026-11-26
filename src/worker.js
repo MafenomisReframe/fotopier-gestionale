@@ -32,6 +32,69 @@ async function accessEmail(req, env) {
   return pay.email || 'utente';
 }
 
+/* ---- accesso con password: cookie di sessione firmato (HMAC) ---- */
+const enc8 = (s) => new TextEncoder().encode(s);
+const toB64u = (buf) => { let b = ''; new Uint8Array(buf).forEach(x => b += String.fromCharCode(x)); return btoa(b).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_'); };
+const SESS_DAYS = 30;
+async function sessSecret(env) {
+  if (env.SESSION_SECRET) return env.SESSION_SECRET;
+  const r = await env.DB.prepare('SELECT data FROM docs WHERE path = ?1').bind('sys/secret').first();
+  if (r) { try { return JSON.parse(r.data).k; } catch (e) {} }
+  const a = new Uint8Array(32); crypto.getRandomValues(a);
+  const k = toB64u(a);
+  await env.DB.prepare('INSERT OR IGNORE INTO docs (path, data, updated) VALUES (?1, ?2, ?3)').bind('sys/secret', JSON.stringify({ k }), Date.now()).run();
+  const r2 = await env.DB.prepare('SELECT data FROM docs WHERE path = ?1').bind('sys/secret').first();
+  return JSON.parse(r2.data).k;
+}
+async function hmac(env, msg) {
+  const key = await crypto.subtle.importKey('raw', enc8(await sessSecret(env)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return toB64u(await crypto.subtle.sign('HMAC', key, enc8(msg)));
+}
+function eq(a, b) { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
+function cookieOf(req, name) {
+  const m = (req.headers.get('Cookie') || '').split(/;\s*/).find(c => c.startsWith(name + '='));
+  return m ? m.slice(name.length + 1) : '';
+}
+async function sessionOk(req, env) {
+  const v = cookieOf(req, 'fp_s'); const i = v.indexOf('.');
+  if (i < 1) return false;
+  const exp = v.slice(0, i);
+  if (!(Number(exp) > Date.now())) return false;
+  return eq(await hmac(env, 'v1.' + exp), v.slice(i + 1));
+}
+async function sessionCookie(env) {
+  const exp = String(Date.now() + SESS_DAYS * 864e5);
+  return `fp_s=${exp}.${await hmac(env, 'v1.' + exp)}; Path=/; Max-Age=${SESS_DAYS * 86400}; HttpOnly; Secure; SameSite=Lax`;
+}
+async function studio(env) {
+  const r = await env.DB.prepare('SELECT data FROM docs WHERE path = ?1').bind('impostazioni/studio').first();
+  try { return r ? JSON.parse(r.data) : {}; } catch (e) { return {}; }
+}
+async function login(req, env) {
+  const ip = req.headers.get('CF-Connecting-IP') || 'x';
+  const rlPath = 'sys/rl:' + ip.slice(0, 45);
+  const row = await env.DB.prepare('SELECT data FROM docs WHERE path = ?1').bind(rlPath).first();
+  let rl = { n: 0, t: Date.now() }; try { if (row) rl = JSON.parse(row.data); } catch (e) {}
+  if (Date.now() - rl.t > 600e3) rl = { n: 0, t: Date.now() };
+  if (rl.n >= 8) return json({ error: 'Troppi tentativi, riprova tra qualche minuto' }, 429);
+  const b = await req.json();
+  const hash = String(b.hash || '');
+  if (!/^[0-9a-f]{64}$/.test(hash)) return json({ error: 'Richiesta non valida' }, 400);
+  const st = await studio(env);
+  let good = false;
+  if (!st.appHash) {
+    if (b.setup) { st.appHash = hash; await env.DB.prepare('INSERT INTO docs (path, data, updated) VALUES (?1, ?2, ?3) ON CONFLICT(path) DO UPDATE SET data = ?2, updated = ?3').bind('impostazioni/studio', JSON.stringify(st), Date.now()).run(); good = true; }
+  } else good = eq(hash, String(st.appHash));
+  if (!good) {
+    rl.n++;
+    await env.DB.prepare('INSERT INTO docs (path, data, updated) VALUES (?1, ?2, ?3) ON CONFLICT(path) DO UPDATE SET data = ?2, updated = ?3').bind(rlPath, JSON.stringify(rl), Date.now()).run();
+    return json({ error: 'Password sbagliata' }, 401);
+  }
+  const h = new Headers({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  h.append('Set-Cookie', await sessionCookie(env));
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: h });
+}
+
 /* ---- Google Calendar con service account ---- */
 let gTok = null, gExp = 0;
 async function googleToken(env) {
@@ -159,13 +222,23 @@ export default {
     const url = new URL(req.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
     try {
-      const who = await accessEmail(req, env);
-      if (!who) return json({ error: 'Accesso non autorizzato' }, 401);
+      if (url.pathname === '/api/login' && req.method === 'POST') return await login(req, env);
+      const authed = (await sessionOk(req, env)) || !!(await accessEmail(req, env));
+      if (url.pathname === '/api/session') {
+        if (authed) return json({ ok: true });
+        return json({ ok: false, setup: !(await studio(env)).appHash });
+      }
+      if (url.pathname === '/api/logout') {
+        const h = new Headers({ 'Content-Type': 'application/json' });
+        h.append('Set-Cookie', 'fp_s=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+        return new Response('{"ok":true}', { headers: h });
+      }
+      if (!authed) return json({ error: 'Accesso non autorizzato' }, 401);
 
       if (url.pathname === '/api/all' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT path, data FROM docs').all();
         const docs = {};
-        for (const r of results) { try { docs[r.path] = JSON.parse(r.data); } catch (e) {} }
+        for (const r of results) { if (r.path.startsWith('sys/')) continue; try { docs[r.path] = JSON.parse(r.data); } catch (e) {} }
         return json({ docs });
       }
       if (url.pathname === '/api/doc') {
