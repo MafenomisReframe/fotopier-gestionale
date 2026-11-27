@@ -241,7 +241,36 @@ async function sendMail(env, b) {
   return json({ ok: true, id: j.id });
 }
 
+
+const OGGI = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome' }).format(new Date());
+const ADD = (ds, n) => { const d = new Date(ds + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const DLONG = (ds) => { const M = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre']; const [y, m, d] = ds.split('-').map(Number); return d + ' ' + M[m - 1] + ' ' + y; };
+const MAILRE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/;
+async function giornaliero(env) {
+  const oggi = OGGI();
+  const st = await studio(env);
+  const firma = '\n\nUn caro saluto,\n' + (st.titolare || 'Foto Pier') + (st.tel ? '\n' + st.tel : '') + (st.web ? '\n' + st.web : '');
+  const { results } = await env.DB.prepare("SELECT path, data FROM docs WHERE path LIKE 'matrimoni/%'").all();
+  for (const r of results) {
+    let w; try { w = JSON.parse(r.data); } catch (e) { continue; }
+    const m = String(w.email || '').match(MAILRE); if (!m) continue;
+    const nomi = [w.sposo && w.sposo.nome, w.sposa && w.sposa.nome].filter(Boolean).join(' e ');
+    let subject = '', text = '', flag = '';
+    if (w.attesa && w.scadenza && !w.avviso5 && w.scadenza >= oggi && ADD(oggi, 5) >= w.scadenza) {
+      flag = 'avviso5'; subject = 'La data del ' + DLONG(w.data) + ' scade tra pochi giorni';
+      text = 'Gentili ' + nomi + ',\n\nvi ricordiamo che la data del ' + DLONG(w.data) + ' che abbiamo riservato per voi scade il ' + DLONG(w.scadenza) + ' (tra 5 giorni).\n\nSe non riceveremo conferma entro quel giorno, la data tornerà disponibile per altre coppie.\n\nSe volete confermarla, contattateci pure.' + firma;
+    } else if (!w.attesa && w.dataBloccata && !w.contrattoGenerato && w.scadContratto && !w.avvisoContratto && w.scadContratto <= oggi) {
+      flag = 'avvisoContratto'; subject = 'Contratto per il matrimonio del ' + DLONG(w.data);
+      text = 'Gentili ' + nomi + ',\n\nla data del ' + DLONG(w.data) + ' è bloccata per voi. Per completare la prenotazione vi chiediamo di passare in studio per la firma del contratto.\n\nContattateci per fissare un appuntamento.' + firma;
+    }
+    if (!flag) continue;
+    const res = await sendMail(env, { to: m[0], subject, text });
+    if (res.ok) { w[flag] = oggi; await env.DB.prepare('UPDATE docs SET data = ?1, updated = ?2 WHERE path = ?3').bind(JSON.stringify(w), Date.now(), r.path).run(); }
+  }
+}
+
 export default {
+  async scheduled(ev, env, ctx) { ctx.waitUntil(giornaliero(env)); },
   async fetch(req, env) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
